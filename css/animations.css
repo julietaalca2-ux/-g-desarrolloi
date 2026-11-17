@@ -76,7 +76,7 @@ main > div.og-tab-enter {
 .profile-stat-box { }
 .profile-tab-btn { transition: color 0.2s ease, transform 0.15s var(--og-ease); }
 .profile-tab-btn:active { transform: scale(0.95); }
-.profile-tab-content-pane.active { animation: ogFadeIn 0.25s ease both; }
+.profile-tab-content-pane.active { }
 
 /* ---------- Barra inferior ---------- */
 nav button { transition: color 0.2s ease, transform 0.15s var(--og-ease); -webkit-tap-highlight-color: transparent; }
