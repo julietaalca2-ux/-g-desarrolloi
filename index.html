@@ -35,6 +35,7 @@
 <link rel="stylesheet" href="css/chat.css">
 <link rel="stylesheet" href="css/settings.css">
 <link rel="stylesheet" href="css/camera.css">
+<link rel="stylesheet" href="css/loors.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body id="appBody">
@@ -180,6 +181,16 @@ Tu historia
 <div id="searchHashtagsResults" style="color:var(--text-muted); padding:32px 20px; text-align:center; font-size:13px;">No hay hashtags disponibles para esta búsqueda.</div>
 </div>
 </div>
+</div>
+<!-- SECCIÓN LOORS -->
+<div id="loors-section" class="section" style="padding:0; background:#000;">
+<header class="loors-top-bar">
+<span class="loors-brand-title">LOORS</span>
+<button class="loors-upload-trigger" onclick="document.getElementById('loors-upload-modal').classList.add('open')">
+<span>+</span> Subir Loor
+</button>
+</header>
+<div id="loors-feed-container" class="loors-feed-container"></div>
 </div>
 <!-- CREAR PUBLICACIÓN -->
 <div id="create" class="section" style="padding: 18px;">
@@ -750,6 +761,36 @@ Tu historia
 </div>
 <div class="story-bottom-bar" style="justify-content:center;color:#fff;font-size:13px;" id="highlightViewerCounter">1 / 1</div>
 </div>
+<!-- MODALES LOORS -->
+<div id="loors-comments-modal" class="loor-modal-backdrop">
+<div class="loor-sheet">
+<div class="loor-sheet-header">
+<span>Comentarios</span>
+<button class="loor-close-modal" onclick="document.getElementById('loors-comments-modal').classList.remove('open')">×</button>
+</div>
+<div id="loor-comments-list" class="loor-comments-list"></div>
+<form id="loor-comment-form" class="loor-comment-form">
+<input type="text" id="loor-comment-input" placeholder="Agregá un comentario..." required>
+<button type="submit">Enviar</button>
+</form>
+</div>
+</div>
+<div id="loors-upload-modal" class="loor-modal-backdrop">
+<div class="loor-sheet">
+<div class="loor-sheet-header">
+<span>Nuevo Loor</span>
+<button class="loor-close-modal" onclick="document.getElementById('loors-upload-modal').classList.remove('open')">×</button>
+</div>
+<form id="loor-upload-form" class="loor-upload-form">
+<label style="font-size:0.85rem;font-weight:600;">Seleccionar video (vertical 9:16):</label>
+<input type="file" id="loor-video-file" accept="video/*" required>
+<textarea id="loor-desc-input" rows="2" placeholder="Escribí una descripción..."></textarea>
+<input type="text" id="loor-hashtags-input" placeholder="Hashtags (ej: #og #arquitectura)">
+<input type="text" id="loor-audio-input" placeholder="Nombre del audio o canción (opcional)">
+<button type="submit" id="loor-upload-submit" class="loor-submit-btn">Publicar Loor</button>
+</form>
+</div>
+</div>
 <!-- Modal Edición de Perfil -->
 <div id="editProfileModal">
 <div class="edit-modal-card">
@@ -897,6 +938,10 @@ Tu historia
 <span id="navUnreadDot" class="nav-msg-badge"></span>
 <small>Chat</small>
 </button>
+<button id="nav-loors-btn" aria-label="LOORS">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
+<small>LOORS</small>
+</button>
 <button onclick="showTab('explore',this)" aria-label="Explore">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 <small>Explore</small>
@@ -926,6 +971,7 @@ Tu historia
 <script src="js/features/profile.js"></script>
 <script src="js/features/activity.js"></script>
 <script src="js/features/chat.js"></script>
+<script src="js/features/loors.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
