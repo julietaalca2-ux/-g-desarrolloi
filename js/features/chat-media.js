@@ -5,7 +5,8 @@
    Expone: toggleChatAttachMenu, closeChatAttachMenu, pickChatGallery, pickChatFile,
    handleChatFilesSelected, sendChatAttachment, openChatCamera, closeChatCamera,
    captureChatPhoto, retakeChatPhoto, sendChatCameraPhoto, switchChatCamera,
-   openChatImageViewer, buildChatPayloadNode */
+   openChatImageViewer, buildChatPayloadNode, startChatRecording, cancelChatRecording,
+   sendChatRecording, updateChatSendMicState */
 
 const CHAT_MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const CHAT_MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -70,6 +71,8 @@ function buildChatPayloadNode(payload, msg, isMine) {
   video.preload = 'metadata';
   return video;
  }
+
+ if (payload.t === 'audio') return buildChatAudioNode(payload);
 
  if (payload.t === 'file') {
   const a = document.createElement('a');
@@ -153,7 +156,7 @@ function guessChatExtension(file, blob) {
  return clean === 'jpeg' ? 'jpg' : (clean || 'bin');
 }
 
-async function sendChatAttachment(file, forcedKind) {
+async function sendChatAttachment(file, forcedKind, extraMeta) {
  if (!activeConversationId || !currentUser || !file) return;
 
  const kind = forcedKind || (file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'file');
@@ -170,7 +173,7 @@ async function sendChatAttachment(file, forcedKind) {
 
  const blob = kind === 'image' ? await compressImageBlob(file, 1600, 0.85) : file;
  const localUrl = URL.createObjectURL(blob);
- const meta = { t: kind, u: localUrl, n: file.name || (kind === 'image' ? 'foto.jpg' : 'archivo'), s: blob.size, m: blob.type || '' };
+ const meta = { t: kind, u: localUrl, n: file.name || (kind === 'image' ? 'foto.jpg' : 'archivo'), s: blob.size, m: blob.type || '', ...(extraMeta || {}) };
 
  const tempId = 'optimistic-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
  const node = appendChatMessageNode({
@@ -323,3 +326,198 @@ document.addEventListener('visibilitychange', () => {
  if (document.hidden && chatCamStream) stopChatCameraStream();
  else if (!document.hidden && modal?.classList.contains('active') && !modal.classList.contains('has-photo') && !chatCamStream) startChatCameraStream();
 });
+
+
+/* =========================================================================
+   MENSAJES DE VOZ
+   ========================================================================= */
+const CHAT_AUDIO_MAX_SECONDS = 300;   // 5 minutos
+const CHAT_AUDIO_MIN_SECONDS = 1;
+let chatRec = null;
+let chatCurrentAudio = null;
+
+/* El botón de enviar aparece solo cuando hay texto; si el campo está vacío se ve el micrófono */
+function updateChatSendMicState(el) {
+ const input = el || document.getElementById('chatMessageInput');
+ const footer = document.querySelector('#chatRoomPage .chat-input-footer');
+ if (!footer || !input) return;
+ footer.classList.toggle('has-text', input.value.trim().length > 0);
+}
+
+function pickChatAudioMime() {
+ if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== 'function') return '';
+ const candidates = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'];
+ return candidates.find(t => MediaRecorder.isTypeSupported(t)) || '';
+}
+
+function chatAudioFileExtension(mime) {
+ if ((mime || '').includes('mp4')) return 'm4a';
+ if ((mime || '').includes('ogg')) return 'ogg';
+ return 'webm';
+}
+
+async function startChatRecording() {
+ if (!activeConversationId || !currentUser || chatRec) return;
+ if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+  alert('Tu navegador no permite grabar audios. Probá con Safari o Chrome actualizado.');
+  return;
+ }
+ closeChatAttachMenu();
+
+ let stream;
+ try {
+  stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+ } catch (e) {
+  alert('No se pudo acceder al micrófono. Revisá que hayas dado permiso a la app.');
+  return;
+ }
+
+ // Si mientras se pedía el permiso otra grabación empezó o se cambió de chat
+ if (chatRec) { stream.getTracks().forEach(t => t.stop()); return; }
+
+ const mime = pickChatAudioMime();
+ let recorder;
+ try {
+  recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+ } catch (e) {
+  stream.getTracks().forEach(t => t.stop());
+  alert('No se pudo iniciar la grabación en este dispositivo.');
+  return;
+ }
+
+ const rec = {
+  recorder, stream, chunks: [], mime: recorder.mimeType || mime || 'audio/webm',
+  startedAt: Date.now(), timer: null, convId: activeConversationId, sendOnStop: false
+ };
+ chatRec = rec;
+ recorder.ondataavailable = e => { if (e.data && e.data.size) rec.chunks.push(e.data); };
+ recorder.onstop = () => finishChatRecording(rec);
+ recorder.start(500);
+
+ const footer = document.querySelector('#chatRoomPage .chat-input-footer');
+ footer?.classList.add('recording');
+ const timerEl = document.getElementById('chatRecordTimer');
+ if (timerEl) timerEl.textContent = '0:00';
+ rec.timer = setInterval(() => {
+  const secs = (Date.now() - rec.startedAt) / 1000;
+  if (timerEl) timerEl.textContent = formatCallDuration(secs);
+  if (secs >= CHAT_AUDIO_MAX_SECONDS) stopChatRecording(true);
+ }, 250);
+}
+
+/* send = true: se envía; false: se descarta */
+function stopChatRecording(send) {
+ const rec = chatRec;
+ if (!rec || rec.stopping) return;
+ rec.stopping = true;
+ rec.sendOnStop = !!send;
+ clearInterval(rec.timer);
+ document.querySelector('#chatRoomPage .chat-input-footer')?.classList.remove('recording');
+ if (rec.recorder.state !== 'inactive') rec.recorder.stop();
+ else finishChatRecording(rec);
+}
+
+function cancelChatRecording() { stopChatRecording(false); }
+function sendChatRecording() { stopChatRecording(true); }
+
+function finishChatRecording(rec) {
+ if (rec.finished) return;
+ rec.finished = true;
+ rec.stream.getTracks().forEach(t => t.stop());
+ if (chatRec === rec) chatRec = null;
+ if (!rec.sendOnStop) return;
+
+ const seconds = (Date.now() - rec.startedAt) / 1000;
+ if (seconds < CHAT_AUDIO_MIN_SECONDS || !rec.chunks.length) return;
+ // Si se cambió de chat mientras se grababa, no se manda a otra conversación
+ if (activeConversationId !== rec.convId) return;
+
+ const blob = new Blob(rec.chunks, { type: rec.mime });
+ const file = new File([blob], `audio.${chatAudioFileExtension(rec.mime)}`, { type: rec.mime });
+ sendChatAttachment(file, 'audio', { d: Math.round(seconds) });
+}
+
+// Si la app pasa a segundo plano el sistema corta el micrófono: se descarta la grabación
+document.addEventListener('visibilitychange', () => {
+ if (document.hidden && chatRec) stopChatRecording(false);
+});
+
+/* ---------- Reproductor de mensajes de voz ---------- */
+const CHAT_AUDIO_SPEEDS = [1, 1.5, 2];
+const CHAT_PLAY_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+const CHAT_PAUSE_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+
+function buildChatAudioNode(payload) {
+ const wrap = document.createElement('div');
+ wrap.className = 'chat-audio';
+
+ const btn = document.createElement('button');
+ btn.type = 'button';
+ btn.className = 'chat-audio-btn';
+ btn.setAttribute('aria-label', 'Reproducir mensaje de voz');
+ btn.innerHTML = CHAT_PLAY_SVG;
+
+ const bar = document.createElement('div');
+ bar.className = 'chat-audio-bar';
+ const fill = document.createElement('div');
+ fill.className = 'chat-audio-fill';
+ bar.append(fill);
+
+ const time = document.createElement('span');
+ time.className = 'chat-audio-time';
+ const total = Number(payload.d) || 0;
+ time.textContent = formatCallDuration(total);
+
+ const speed = document.createElement('button');
+ speed.type = 'button';
+ speed.className = 'chat-audio-speed';
+ speed.textContent = '1x';
+
+ const audio = new Audio();
+ audio.preload = 'none';
+ audio.src = payload.u;
+ const state = { audio, btn };
+
+ const duration = () => (isFinite(audio.duration) && audio.duration > 0 ? audio.duration : total);
+ const reset = () => {
+  btn.innerHTML = CHAT_PLAY_SVG;
+  fill.style.width = '0%';
+  time.textContent = formatCallDuration(total || duration());
+ };
+
+ btn.addEventListener('click', e => {
+  e.stopPropagation();
+  if (!audio.paused) { audio.pause(); return; }
+  if (chatCurrentAudio && chatCurrentAudio !== state) chatCurrentAudio.audio.pause();
+  chatCurrentAudio = state;
+  audio.play().catch(() => { btn.innerHTML = CHAT_PLAY_SVG; });
+ });
+ audio.addEventListener('play', () => { btn.innerHTML = CHAT_PAUSE_SVG; });
+ audio.addEventListener('pause', () => { btn.innerHTML = CHAT_PLAY_SVG; });
+ audio.addEventListener('ended', () => { audio.currentTime = 0; reset(); });
+ audio.addEventListener('timeupdate', () => {
+  const d = duration();
+  if (d > 0) fill.style.width = Math.min(100, (audio.currentTime / d) * 100) + '%';
+  time.textContent = formatCallDuration(audio.currentTime);
+ });
+
+ bar.addEventListener('click', e => {
+  e.stopPropagation();
+  const d = duration();
+  if (!d) return;
+  const rect = bar.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  audio.currentTime = ratio * d;
+  fill.style.width = (ratio * 100) + '%';
+ });
+
+ speed.addEventListener('click', e => {
+  e.stopPropagation();
+  const idx = (CHAT_AUDIO_SPEEDS.indexOf(audio.playbackRate) + 1) % CHAT_AUDIO_SPEEDS.length;
+  audio.playbackRate = CHAT_AUDIO_SPEEDS[idx];
+  speed.textContent = CHAT_AUDIO_SPEEDS[idx] + 'x';
+ });
+
+ wrap.append(btn, bar, time, speed);
+ return wrap;
+}

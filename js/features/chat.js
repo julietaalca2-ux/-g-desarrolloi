@@ -36,6 +36,7 @@ function chatContentPreview(content) {
  if (!p) return content;
  if (p.t === 'image') return '📷 Foto';
  if (p.t === 'video') return '🎥 Video';
+ if (p.t === 'audio') return '🎤 Mensaje de voz';
  if (p.t === 'file') return '📎 ' + (p.n || 'Archivo');
  if (p.t === 'call') return p.v ? '📹 Videollamada' : '📞 Llamada';
  return 'Mensaje';
@@ -329,6 +330,7 @@ async function openChatRoom(conversationId, recipientProfile) {
  chatStickToBottom = true;
  cancelReply();
  initChatInteractions();
+ if (typeof updateChatSendMicState === 'function') updateChatSendMicState();
 
  document.querySelectorAll('main>div').forEach(x => x.classList.remove('active'));
  document.getElementById('chatRoomPage').classList.add('active');
@@ -600,6 +602,7 @@ function cancelReply() {
 // Campo de texto: crece hasta 5 líneas; Enter envía en computadora, en el celular Enter hace salto de línea
 function autoGrowChatInput(el) {
  if (!el) return;
+ if (typeof updateChatSendMicState === 'function') updateChatSendMicState(el);
  const container = document.getElementById('chatMessagesContainer');
  const stick = container ? isChatNearBottom(container) : false;
  if (!el.value) {
