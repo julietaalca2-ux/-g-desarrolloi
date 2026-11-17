@@ -3,6 +3,7 @@
    ========================================== */
 
 async function init() {
+  initTheme();
   updatePwaInstallButtonsVisibility();
   
   // Inicializar LOORS de forma segura si la función existe
