@@ -41,6 +41,20 @@
   };
 
   var sb = null;
+  var userGetter = null;
+
+  /** Evita que una llamada colgada deje la interfaz esperando para siempre */
+  function withTimeout(promise, ms, label) {
+    return new Promise(function (resolve, reject) {
+      var t = setTimeout(function () {
+        reject(new Error('Tiempo agotado' + (label ? ' (' + label + ')' : '') + '. Revisa tu conexión y vuelve a intentarlo.'));
+      }, ms || 12000);
+      Promise.resolve(promise).then(
+        function (r) { clearTimeout(t); resolve(r); },
+        function (e) { clearTimeout(t); reject(e); }
+      );
+    });
+  }
   var cache = new Map(); // userId -> { verified, type, at }
   var observer = null;
   var esc = function (v) { return global.VerifiedBadge.escapeHtml(v); };
@@ -55,6 +69,7 @@
     if (overrides) {
       Object.keys(overrides).forEach(function (k) {
         if (k === 'fields') Object.assign(CFG.fields, overrides.fields);
+        else if (k === 'getUser') userGetter = overrides.getUser;
         else CFG[k] = overrides[k];
       });
     }
@@ -69,8 +84,14 @@
   }
 
   async function currentUser() {
-    var res = await requireClient().auth.getUser();
-    return res && res.data ? res.data.user : null;
+    // 1) Usuario que ya tiene la app en memoria (sin llamadas de red)
+    try {
+      var hint = userGetter && userGetter();
+      if (hint && hint.id) return hint;
+    } catch (e) {}
+    // 2) Sesión guardada localmente
+    var res = await withTimeout(requireClient().auth.getSession(), 8000, 'sesión');
+    return res && res.data && res.data.session ? res.data.session.user : null;
   }
 
   /* ----------------------------- Toasts ----------------------------- */
@@ -79,6 +100,7 @@
     if (!host) {
       host = document.createElement('div');
       host.className = 'vf-toasts';
+      host.style.zIndex = '2147483001';
       host.setAttribute('aria-live', 'polite');
       document.body.appendChild(host);
     }
@@ -99,10 +121,10 @@
 
     for (var i = 0; i < missing.length; i += 100) {
       var chunk = missing.slice(i, i + 100);
-      var res = await requireClient()
+      var res = await withTimeout(requireClient()
         .from(CFG.profilesTable)
         .select('id,is_verified,verified_type')
-        .in('id', chunk);
+        .in('id', chunk), 12000, 'verificados');
 
       var found = {};
       (res.data || []).forEach(function (row) {
@@ -126,19 +148,21 @@
     var user = await currentUser();
     if (!user) return { loggedIn: false };
 
-    var profileRes = await requireClient()
+    var profileRes = await withTimeout(requireClient()
       .from(CFG.profilesTable)
       .select('is_verified,verified_type,verified_at')
       .eq('id', user.id)
-      .maybeSingle();
+      .maybeSingle(), 12000, 'perfil');
+    if (profileRes.error) throw new Error(profileRes.error.message);
 
-    var reqRes = await requireClient()
+    var reqRes = await withTimeout(requireClient()
       .from(CFG.requestsTable)
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle();
+      .maybeSingle(), 12000, 'solicitudes');
+    if (reqRes.error) throw new Error(reqRes.error.message);
 
     var profile = profileRes.data || {};
     return {
@@ -270,6 +294,8 @@
     closeModal();
     var overlay = document.createElement('div');
     overlay.className = 'vf-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.zIndex = '2147483000';
     overlay.innerHTML =
       '<div class="vf-modal" role="dialog" aria-modal="true" aria-labelledby="' + labelledBy + '">' +
       '<button type="button" class="vf-close" aria-label="Cerrar">&times;</button>' +
@@ -430,6 +456,7 @@
     init: init,
     client: function () { return requireClient(); },
     toast: toast,
+    withTimeout: withTimeout,
     getMyStatus: getMyStatus,
     getUserBadge: getUserBadge,
     decorateUsers: decorateUsers,
