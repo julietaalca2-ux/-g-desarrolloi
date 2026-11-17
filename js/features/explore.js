@@ -8,6 +8,13 @@
    handleExploreSearchInput, resetExploreSearch, switchSearchTab, executeAdvancedSearch */
 
 let exploreObserverInitialized = false;
+let exploreLastLoad = 0;      // cuándo se pidió la primera página por última vez
+let exploreRenderedSig = '';   // firma de lo que ya está dibujado (evita redibujar lo mismo)
+const EXPLORE_REFRESH_MS = 45000;
+
+function exploreSignature(entries) {
+ return entries.map(e => (e._type || 'p') + e.id).join(',');
+}
 
 /* ---- Videos (Loors) dentro de Explorar: se reproducen solos, sin sonido, estilo Instagram ----
    Un video empieza a reproducirse en cuanto se ve aunque sea un pedacito (arriba o abajo de la pantalla).
@@ -300,26 +307,42 @@ async function loadExploreGrid() {
  if (!grid) return;
  ensureExploreScrollObserver();
 
- explorePage = 0;
- exploreHasMore = true;
-
- if (!explorePostsCache) {
-  const cached = ogCache.get('explore_posts', 1000 * 60 * 30);
-  if (Array.isArray(cached) && cached.length > 0) explorePostsCache = cached;
+ // Volver a Explorar con la grilla ya dibujada y reciente: no se toca nada, solo se reanuda
+ if (grid.childElementCount > 0 && (Date.now() - exploreLastLoad) < EXPLORE_REFRESH_MS) {
+  scheduleExplorePlayback();
+  return;
  }
- if (Array.isArray(explorePostsCache) && explorePostsCache.length > 0) {
-  renderExplorePostsToGrid(explorePostsCache, grid, true);
+
+ // Primera vez: pintar rápido desde caché
+ if (grid.childElementCount === 0) {
+  if (!explorePostsCache) {
+   const cached = ogCache.get('explore_posts', 1000 * 60 * 30);
+   if (Array.isArray(cached) && cached.length > 0) explorePostsCache = cached;
+  }
+  if (Array.isArray(explorePostsCache) && explorePostsCache.length > 0) {
+   explorePage = 0;
+   exploreHasMore = true;
+   renderExplorePostsToGrid(explorePostsCache, grid, true);
+   exploreRenderedSig = exploreSignature(explorePostsCache);
+  }
  }
 
  if (exploreLoading) return;
  exploreLoading = true;
  try {
   const { entries, hasMore } = await fetchExplorePage(0);
-  exploreHasMore = hasMore;
+  exploreLastLoad = Date.now();
   if (entries.length > 0) {
-   explorePostsCache = entries;
-   ogCache.set('explore_posts', entries);
-   renderExplorePostsToGrid(entries, grid, true);
+   const sig = exploreSignature(entries);
+   // Si no cambió nada, se deja la grilla (y sus videos) tal cual
+   if (sig !== exploreRenderedSig || grid.childElementCount === 0) {
+    explorePage = 0;
+    exploreHasMore = hasMore;
+    explorePostsCache = entries;
+    exploreRenderedSig = sig;
+    renderExplorePostsToGrid(entries, grid, true);
+    setTimeout(() => ogCache.set('explore_posts', entries), 0);
+   }
   }
  } finally {
   exploreLoading = false;
