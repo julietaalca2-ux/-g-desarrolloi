@@ -36,6 +36,7 @@
 <link rel="stylesheet" href="css/settings.css">
 <link rel="stylesheet" href="css/camera.css">
 <link rel="stylesheet" href="css/loors.css">
+<link rel="stylesheet" href="css/notes.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body id="appBody">
@@ -145,6 +146,8 @@ Tu historia
 <input class="explore-search-input" id="dmSearchInput" placeholder="Buscar usuario o archivo..." oninput="searchUsersForChat()">
 </div>
 </div>
+<!-- Notas: texto corto + canción, duran 24 horas -->
+<div id="notes-row" class="notes-row" data-no-swipe></div>
 <div id="dmSearchResults" style="padding: 0 18px;"></div>
 <div id="dmConversationsList">
 <div class="activity-empty">Cargando conversaciones...</div>
@@ -964,6 +967,41 @@ Subir
 </div>
 </div>
 </div>
+<!-- Notas: crear la mía -->
+<div id="note-composer-modal" class="loor-modal-backdrop" onclick="if(event.target===this)closeNoteComposer()">
+<div class="loor-sheet" style="overflow-y:auto;">
+<div class="loor-sheet-header">
+<span>Tu nota</span>
+<button type="button" class="loor-close-modal" aria-label="Cerrar" onclick="closeNoteComposer()">✕</button>
+</div>
+<div class="note-text-wrap">
+<input type="text" id="note-text-input" class="note-text-input" maxlength="60" placeholder="Comparte lo que piensas..." autocomplete="off">
+<span id="note-counter" class="note-counter">0/60</span>
+</div>
+<div class="note-audio-row">
+<button type="button" id="note-audio-choose-btn" class="loor-audio-choose-btn" onclick="chooseNoteAudio()">🎵 Añadir canción</button>
+<div id="note-audio-selected" class="note-audio-selected">
+<span id="note-audio-selected-name"></span>
+<button type="button" aria-label="Quitar canción" onclick="clearNoteAudio()">✕</button>
+</div>
+</div>
+<p class="note-hint">La ven las personas que te siguen y desaparece en 24 horas.</p>
+<div class="note-actions">
+<button type="button" id="note-publish-btn" class="loor-submit-btn" onclick="publishNote()">Compartir</button>
+<button type="button" id="note-delete-btn" class="note-delete-btn" onclick="deleteMyNote()">Eliminar nota</button>
+</div>
+</div>
+</div>
+<!-- Notas: ver la de otra persona -->
+<div id="note-viewer-modal" class="loor-modal-backdrop" onclick="if(event.target===this)closeNoteViewer()">
+<div class="loor-sheet">
+<div class="loor-sheet-header">
+<span id="note-viewer-user">Nota</span>
+<button type="button" class="loor-close-modal" aria-label="Cerrar" onclick="closeNoteViewer()">✕</button>
+</div>
+<div id="note-viewer-body" class="note-viewer-body"></div>
+</div>
+</div>
 <!-- 5. BARRA DE NAVEGACIÓN INFERIOR (FLOATING GLASSDOCK) -->
 <nav id="bottomNavBar">
 <button class="active" onclick="showTab('feed',this)" aria-label="Inicio">
@@ -1010,6 +1048,7 @@ Subir
 <script src="js/features/chat.js"></script>
 <script src="js/features/loors.js"></script>
 <script src="js/features/audio-library.js"></script>
+<script src="js/features/notes.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
