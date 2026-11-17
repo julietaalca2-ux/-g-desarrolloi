@@ -30,7 +30,49 @@ function initLoors() {
     }
   });
   bindLoorsUIEvents();
+  initLoorsSoundUI();
 }
+
+// Botón de sonido (preferencia por sesión) y aviso cuando el navegador exige un toque para activar el audio
+function initLoorsSoundUI() {
+  const section = document.getElementById('loors-section');
+  if (!section || document.getElementById('loors-sound-btn')) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'loors-sound-btn';
+  btn.className = 'loors-sound-btn';
+  btn.innerHTML =
+    '<svg class="ico-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>' +
+    '<svg class="ico-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>';
+  const hint = document.createElement('div');
+  hint.id = 'loors-sound-hint';
+  hint.className = 'loors-sound-hint';
+  hint.textContent = 'Toca para activar el sonido';
+  section.appendChild(btn);
+  section.appendChild(hint);
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const snd = LoorsEngine.sound;
+    if (snd.needsTap()) snd.unlock();   // bloqueado por el navegador: este toque lo activa
+    else snd.toggle();                  // activar / silenciar (se recuerda en la sesión)
+  });
+  hint.addEventListener('click', () => LoorsEngine.sound.unlock());
+  LoorsEngine.sound.onChange((st) => {
+    btn.classList.toggle('is-off', !st.on);
+    btn.classList.toggle('needs-tap', !!st.needTap);
+    hint.classList.toggle('show', !!st.needTap);
+    btn.setAttribute('aria-label', st.on ? 'Silenciar' : 'Activar sonido');
+  });
+  // Cualquier toque real en Loors desbloquea el audio de Safari para los siguientes videos
+  section.addEventListener('touchend', () => LoorsEngine.sound.prime(), { passive: true });
+  section.addEventListener('click', () => LoorsEngine.sound.prime(), true);
+}
+
+// Diagnóstico desde la consola: loorsDiagnose() -> estado de video/música + revisión del archivo (audio, códec, faststart, HTTP Range)
+window.loorsDiagnose = function () {
+  return LoorsEngine.diagnose().then((r) => { console.log(JSON.stringify(r, null, 2)); return r; });
+};
 
 async function openLoorsSection(targetLoorId) {
   initLoors();
@@ -54,44 +96,13 @@ function closeLoorsSection() {
   LoorsEngine.suspend();   // libera los videos vecinos y deja todo en pausa
 }
 
-// Reproduce el video de una tarjeta y, si tiene música elegida, también su audio
+// El motor decide cómo suena cada Loor (audio propio del video o música elegida) y los mantiene sincronizados
 function playLoorCard(card) {
-  const video = card.querySelector('.loor-video');
-  const audio = card.querySelector('.loor-audio');
-
-  LoorsEngine.ensureSource(card);   // por si el video de esta tarjeta había sido liberado
-
-  video.play().then(() => {
-    card.classList.remove('paused');
-  }).catch((err) => {
-    // AbortError = se pausó antes de arrancar (la persona ya deslizó): no hay que silenciarlo
-    if (err && err.name === 'AbortError') return;
-    video.muted = true;
-    video.play().then(() => card.classList.remove('paused')).catch(() => {});
-  });
-
-  // En iPhone el audio puede quedar bloqueado hasta que la persona toque la pantalla
-  if (audio) startLoorAudio(video, audio);
-}
-
-// El video arranca (mudo) sin esperar; el audio entra apenas tenga datos y se alinea con el video
-function startLoorAudio(video, audio) {
-  if (!audio.getAttribute('src') && audio.dataset.src) { audio.preload = 'auto'; audio.src = audio.dataset.src; }
-  const align = () => {
-    const d = audio.duration;
-    if (!d || !isFinite(d) || video.paused) return;
-    const target = video.currentTime % d;
-    if (Math.abs(audio.currentTime - target) > 0.25) { try { audio.currentTime = target; } catch (e) {} }
-  };
-  if (audio.readyState < 3) audio.addEventListener('playing', align, { once: true });
-  audio.play().catch(() => {});
+  LoorsEngine.playCard(card, () => card.classList.remove('paused'));
 }
 
 function pauseLoorCard(card) {
-  const video = card.querySelector('.loor-video');
-  const audio = card.querySelector('.loor-audio');
-  video.pause();
-  if (audio) audio.pause();
+  LoorsEngine.pauseCard(card);
 }
 
 /* Paginación: se cargan LOORS_PAGE_SIZE videos por vez; al llegar al final se piden los siguientes */
@@ -283,10 +294,10 @@ async function renderLoorsBatch(loors, container) {
     const card = document.createElement('article');
     card.className = 'loor-item';
     card.dataset.loorId = loor.id;
+    if (loor.audio_url) card.dataset.audio = loor.audio_url;   // música elegida: la reproduce el motor (un solo <audio> global)
 
     card.innerHTML = `
       <video class="loor-video" data-src="${escapeLoorHtml(loor.video_url)}" ${loor.thumbnail_url ? `data-poster="${escapeLoorHtml(loor.thumbnail_url)}"` : ''} playsinline webkit-playsinline loop preload="none" disablepictureinpicture disableremoteplayback ${loor.audio_url ? 'muted' : ''}></video>
-      ${loor.audio_url ? `<audio class="loor-audio" data-src="${escapeLoorHtml(loor.audio_url)}" loop preload="none"></audio>` : ''}
       <div class="loor-pause-indicator">❚❚</div>
 
       <div class="loor-overlay-wrapper">
@@ -366,11 +377,10 @@ async function renderLoorsBatch(loors, container) {
       videoEl.dataset.retried = '1';
       setTimeout(() => { videoEl.load(); }, 1200);
     });
-    const audioEl = card.querySelector('.loor-audio');
     videoEl.addEventListener('click', () => {
-      // Si el video corre pero el audio quedó bloqueado por el iPhone, el primer toque lo activa
-      if (audioEl && !videoEl.paused && audioEl.paused) {
-        audioEl.play().catch(() => {});
+      // El navegador había bloqueado el sonido: este toque (real) lo activa, sin pausar el video
+      if (LoorsEngine.sound.needsTap()) {
+        LoorsEngine.sound.unlock();
         return;
       }
       if (videoEl.paused) {
@@ -624,6 +634,13 @@ async function handleUploadLoor(e) {
   submitBtn.textContent = 'Subiendo video...';
 
   try {
+    // Revisión liviana del archivo (pista de audio, códec, faststart). No bloquea la publicación.
+    try {
+      const report = await LoorsEngine.inspectFile(file);
+      if (report.warnings.length || report.notes.length) console.warn('[Loors] Revisión del archivo:', report);
+      if (report.warnings.length && typeof showToast === 'function') showToast(report.warnings[0]);
+    } catch (inspectErr) { console.warn('Sin revisión del archivo:', inspectErr); }
+
     const fileExt = file.name.split('.').pop();
     const filePath = `${currentUser.id}/${Date.now()}.${fileExt}`;
 
