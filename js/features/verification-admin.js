@@ -52,12 +52,24 @@
   async function loadRequests(status) {
     var f = fields();
     var res = await sb().from(VS().CFG.requestsTable)
-      .select('*, profile:' + profilesTable() + '(' + f.username + ',' + f.fullName + ',' + f.avatar + ')')
+      .select('*')
       .eq('status', status)
       .order('created_at', { ascending: status === 'pending' })
       .limit(100);
     if (res.error) throw new Error(res.error.message);
-    return res.data || [];
+    var rows = res.data || [];
+
+    // Perfiles en una consulta aparte (no requiere foreign key en Supabase)
+    var ids = Array.from(new Set(rows.map(function (r) { return r.user_id; }).filter(Boolean)));
+    if (ids.length) {
+      var pr = await sb().from(profilesTable())
+        .select('id,' + f.username + ',' + f.fullName + ',' + f.avatar)
+        .in('id', ids);
+      var map = {};
+      (pr.data || []).forEach(function (p) { map[p.id] = p; });
+      rows.forEach(function (r) { r.profile = map[r.user_id] || {}; });
+    }
+    return rows;
   }
 
   async function loadVerified() {
