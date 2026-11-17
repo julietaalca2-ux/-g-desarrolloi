@@ -4,7 +4,7 @@
 #loors-section {
   position: fixed;
   inset: 0;
-  bottom: 60px; /* Altura de la barra de navegación inferior de ÖG */
+  bottom: calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px)); /* termina justo donde empieza la barra inferior (incluye el área segura del iPhone) */
   background-color: #000000;
   z-index: 101; /* por encima del header fijo (z-index 100); la barra inferior queda libre por bottom: 60px */
   display: none;
