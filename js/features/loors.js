@@ -3,6 +3,11 @@
    Depende de: db (Supabase), currentUser
    ========================================== */
 
+// Avatar por defecto (silueta gris) para creadores sin foto; no depende de ningún archivo externo
+const LOOR_DEFAULT_AVATAR = 'data:image/svg+xml,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" fill="#3a3a3c"/><circle cx="20" cy="15" r="7" fill="#9a9aa0"/><path d="M6 36c0-8 6-13 14-13s14 5 14 13z" fill="#9a9aa0"/></svg>'
+);
+
 let activeLoorIdForComments = null;
 const viewedLoorsSession = new Set();
 let loorVideoObserver = null;
@@ -61,7 +66,7 @@ async function loadLoorsFeed() {
 
   // Nota: si tu tabla de perfiles en ÖG es 'og_profiles' en lugar de 'profiles', cambiá 'profiles' por 'og_profiles' aquí abajo:
   const [profilesRes, likesRes, commentsRes, savesRes, followsRes] = await Promise.all([
-    db.from('og_profiles').select('id, username, full_name, avatar_url').in('id', userIds),
+    db.from('og_profiles').select('id, username, display_name, avatar_url').in('id', userIds),
     db.from('loor_likes').select('loor_id, user_id').in('loor_id', loorIds),
     db.from('loor_comments').select('loor_id').in('loor_id', loorIds),
     currentUser
@@ -83,7 +88,7 @@ async function loadLoorsFeed() {
   loors.forEach(loor => {
     const creator = profilesMap.get(loor.user_id) || {
       username: 'usuario_og',
-      avatar_url: 'assets/default-avatar.png'
+      avatar_url: LOOR_DEFAULT_AVATAR
     };
 
     const loorLikes = allLikes.filter(lk => lk.loor_id === loor.id);
@@ -140,7 +145,7 @@ async function loadLoorsFeed() {
         <div class="loor-info-panel">
           <div class="loor-creator-row">
             <div class="loor-creator-link" data-user-id="${loor.user_id}">
-              <img class="loor-avatar" src="${creator.avatar_url || 'assets/default-avatar.png'}" alt="${escapeLoorHtml(creator.username)}">
+              <img class="loor-avatar" src="${escapeLoorHtml(creator.avatar_url || '') || LOOR_DEFAULT_AVATAR}" alt="${escapeLoorHtml(creator.username)}" onerror="this.onerror=null;this.src=LOOR_DEFAULT_AVATAR">
               <span class="loor-username">@${escapeLoorHtml(creator.username)}</span>
             </div>
             ${!isOwnVideo ? `
@@ -375,10 +380,10 @@ async function openLoorCommentsModal(loorId) {
   const pMap = new Map((profiles || []).map(p => [p.id, p]));
 
   list.innerHTML = comments.map(c => {
-    const u = pMap.get(c.user_id) || { username: 'usuario', avatar_url: 'assets/default-avatar.png' };
+    const u = pMap.get(c.user_id) || { username: 'usuario', avatar_url: LOOR_DEFAULT_AVATAR };
     return `
       <div class="loor-comment-item">
-        <img src="${u.avatar_url || 'assets/default-avatar.png'}" alt="">
+        <img src="${u.avatar_url || LOOR_DEFAULT_AVATAR}" alt="">
         <div>
           <strong>@${escapeLoorHtml(u.username)}</strong>
           <p style="margin:2px 0 0;">${escapeLoorHtml(c.content)}</p>
