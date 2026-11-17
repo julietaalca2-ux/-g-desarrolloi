@@ -4,7 +4,7 @@
    isUploadingStory); utils.js (timeAgo, setAvatarContent, setPreviewBlobUrl,
    revokePreviewBlobUrl, compressImageBlob, createAvatarNode, setCachedProfile, ogCache)
    En tiempo de ejecución usa funciones de otros módulos: showAuthOverlay (auth.js)
-   Expone: renderProgressSegments (también la usa highlights.js), loadStoriesData,
+   Expone: renderProgressSegments, setViewerImage, attachStoryViewerGestures (los usa también highlights.js), loadStoriesData,
    updateStoryUI, handleStoryClick, openUserStoriesSequence, renderCurrentStorySlide,
    nextStorySlide, prevStorySlide, toggleStoryLikeAction, sendStoryReply, closeStoryViewer,
    openCameraModal, adjustZoom, startCameraStream, switchCamera, closeCameraModal,
@@ -26,9 +26,15 @@ function preloadStoryImageUrl(url) {
  img.src = url;
 }
 
-function renderProgressSegments(containerId, totalCount, activeIndex) {
+/* Duración (en segundos) que dura cada foto en el visor, como en Instagram */
+const STORY_SLIDE_SECONDS = 5;
+
+/* Dibuja las barras de progreso. La barra activa se llena sola en STORY_SLIDE_SECONDS
+   (animación CSS) y al terminar llama a onComplete para pasar a la siguiente foto. */
+function renderProgressSegments(containerId, totalCount, activeIndex, onComplete) {
  const container = document.getElementById(containerId);
  if (!container) return;
+ container.style.setProperty('--story-duration', STORY_SLIDE_SECONDS + 's');
  container.replaceChildren();
  if (!totalCount || totalCount <= 0) return;
 
@@ -41,10 +47,110 @@ function renderProgressSegments(containerId, totalCount, activeIndex) {
 
   const fill = document.createElement('div');
   fill.className = 'story-progress-fill';
+  if (i === activeIndex && typeof onComplete === 'function') {
+   fill.addEventListener('animationend', () => onComplete(), { once: true });
+  }
   seg.append(fill);
   fragment.append(seg);
  }
  container.replaceChildren(fragment);
+}
+
+/* Mientras la imagen carga, el tiempo queda en pausa (clase is-loading del visor) */
+function setViewerImage(viewerId, imgEl, url) {
+ const viewer = document.getElementById(viewerId);
+ if (!imgEl) return;
+ const done = () => viewer?.classList.remove('is-loading');
+ viewer?.classList.add('is-loading');
+ imgEl.onload = done;
+ imgEl.onerror = done;
+ imgEl.src = url;
+ if (imgEl.complete && imgEl.naturalWidth > 0) done();
+}
+
+/* Gestos compartidos de los visores (historias y destacadas):
+   toque izquierda/derecha, deslizar para cambiar o cerrar, y mantener presionado para pausar */
+function attachStoryViewerGestures(area, viewer, { next, prev, close }) {
+ if (!area || !viewer) return;
+ let startX = 0;
+ let startY = 0;
+ let lastTouchEnd = 0;
+ let holdTimer = null;
+ let held = false;
+ let suppressClick = false;
+
+ const startHold = () => {
+  held = false;
+  clearTimeout(holdTimer);
+  holdTimer = setTimeout(() => {
+   held = true;
+   viewer.classList.add('is-held');
+  }, 220);
+ };
+ const endHold = () => {
+  clearTimeout(holdTimer);
+  viewer.classList.remove('is-held');
+ };
+
+ area.addEventListener('touchstart', e => {
+  startX = e.changedTouches[0].clientX;
+  startY = e.changedTouches[0].clientY;
+  startHold();
+ }, { passive: true });
+
+ area.addEventListener('touchmove', e => {
+  const t = e.changedTouches[0];
+  if (!held && (Math.abs(t.clientX - startX) > 12 || Math.abs(t.clientY - startY) > 12)) {
+   clearTimeout(holdTimer);
+  }
+ }, { passive: true });
+
+ area.addEventListener('touchcancel', () => { held = false; endHold(); }, { passive: true });
+
+ area.addEventListener('touchend', e => {
+  lastTouchEnd = Date.now();
+  const wasHeld = held;
+  held = false;
+  endHold();
+  if (wasHeld) return;
+
+  const endX = e.changedTouches[0].clientX;
+  const endY = e.changedTouches[0].clientY;
+  const diffX = endX - startX;
+  const diffY = endY - startY;
+
+  if (Math.abs(diffY) > 90 && diffY > Math.abs(diffX)) { close(); return; }
+  if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+   if (diffX < 0) next(); else prev();
+   return;
+  }
+
+  const rect = area.getBoundingClientRect();
+  if (endX - rect.left < rect.width * 0.35) prev();
+  else next();
+ }, { passive: true });
+
+ /* Ratón (computadora): mantener presionado también pausa */
+ area.addEventListener('mousedown', () => {
+  if (Date.now() - lastTouchEnd < 500) return;
+  startHold();
+ });
+ const mouseRelease = () => {
+  if (Date.now() - lastTouchEnd < 500) return;
+  if (held) suppressClick = true;
+  held = false;
+  endHold();
+ };
+ area.addEventListener('mouseup', mouseRelease);
+ area.addEventListener('mouseleave', mouseRelease);
+
+ area.addEventListener('click', e => {
+  if (Date.now() - lastTouchEnd < 400) return;
+  if (suppressClick) { suppressClick = false; return; }
+  const rect = area.getBoundingClientRect();
+  if (e.clientX - rect.left < rect.width * 0.35) prev();
+  else next();
+ });
 }
 
 async function loadStoriesData() {
@@ -171,10 +277,10 @@ function renderCurrentStorySlide() {
  if (!story || !currentStoryGroupProfile) return;
 
  currentActiveStoryId = story.id;
- renderProgressSegments('storyProgressBars', currentStoryGroupList.length, currentStoryGroupIndex);
+ renderProgressSegments('storyProgressBars', currentStoryGroupList.length, currentStoryGroupIndex, nextStorySlide);
 
  document.getElementById('storyUsername').textContent = '@' + currentStoryGroupProfile.username;
- document.getElementById('storyImage').src = story.image_url;
+ setViewerImage('storyViewer', document.getElementById('storyImage'), story.image_url);
  document.getElementById('storyTimeAgo').textContent = timeAgo(story.created_at);
  setAvatarContent(document.getElementById('storyViewerAvatarInner'), currentStoryGroupProfile.avatar_url);
  document.getElementById('storyLikeBtn')?.classList.remove('liked');
@@ -220,57 +326,21 @@ function sendStoryReply() {
 }
 
 function closeStoryViewer() {
+ const bars = document.getElementById('storyProgressBars');
+ if (bars) bars.replaceChildren();
+ document.getElementById('storyViewer')?.classList.remove('is-held', 'is-loading');
  currentActiveStoryId = null;
  currentStoryGroupList = [];
  currentStoryGroupIndex = 0;
  document.getElementById('storyViewer').classList.remove('active');
 }
 
-/* Gestos táctiles y toque en Visor de Historias (con deduplicación táctil/clic) */
-(function initStoryViewerGestures() {
- const area = document.getElementById('storyContentAreaContainer');
- if (!area) return;
- let startX = 0;
- let startY = 0;
- let lastTouchEnd = 0;
-
- area.addEventListener('touchstart', e => {
-  startX = e.changedTouches[0].clientX;
-  startY = e.changedTouches[0].clientY;
- }, { passive: true });
-
- area.addEventListener('touchend', e => {
-  lastTouchEnd = Date.now();
-  const endX = e.changedTouches[0].clientX;
-  const endY = e.changedTouches[0].clientY;
-  const diffX = endX - startX;
-  const diffY = endY - startY;
-
-  if (Math.abs(diffY) > 90 && diffY > Math.abs(diffX)) {
-   closeStoryViewer();
-   return;
-  }
-
-  if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
-   if (diffX < 0) nextStorySlide();
-   else prevStorySlide();
-   return;
-  }
-
-  const rect = area.getBoundingClientRect();
-  const tapX = endX - rect.left;
-  if (tapX < rect.width * 0.35) prevStorySlide();
-  else nextStorySlide();
- }, { passive: true });
-
- area.addEventListener('click', e => {
-  if (Date.now() - lastTouchEnd < 400) return;
-  const rect = area.getBoundingClientRect();
-  const clickX = e.clientX - rect.left;
-  if (clickX < rect.width * 0.35) prevStorySlide();
-  else nextStorySlide();
- });
-})();
+/* Gestos del Visor de Historias */
+attachStoryViewerGestures(
+ document.getElementById('storyContentAreaContainer'),
+ document.getElementById('storyViewer'),
+ { next: () => nextStorySlide(), prev: () => prevStorySlide(), close: () => closeStoryViewer() }
+);
 
 /* Cámara */
 function stopCameraTracks() {
