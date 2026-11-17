@@ -1230,6 +1230,7 @@ Subir
     try {
       VerificationSystem.init(db, {
         profilesTable: 'og_profiles',
+        getUser: function () { return (typeof currentUser !== 'undefined') ? currentUser : null; },
         fields: { username: 'username', fullName: 'display_name', avatar: 'avatar_url' }
       });
     } catch (err) {
