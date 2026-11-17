@@ -12,6 +12,7 @@ const JAMENDO_TRACKS_URL = 'https://api.jamendo.com/v3.0/tracks/';
 const OWN_AUDIO_MAX_BYTES = 20 * 1024 * 1024; // 20 MB, igual que el bucket og_audios
 
 let selectedLoorAudio = null;
+let audioPickerTarget = 'loor'; // 'loor' = audio de un Loor, 'note' = canción de una nota
 let audioPreviewEl = null;
 let audioPreviewBtn = null;
 let audioPickerBound = false;
@@ -47,15 +48,21 @@ function renderSelectedLoorAudio() {
 }
 
 function selectLoorAudio(audio) {
-  selectedLoorAudio = audio;
-  renderSelectedLoorAudio();
+  if (audioPickerTarget === 'note') {
+    // La canción es para una nota (notes.js)
+    if (typeof setNoteAudio === 'function') setNoteAudio(audio);
+  } else {
+    selectedLoorAudio = audio;
+    renderSelectedLoorAudio();
+  }
   closeAudioPicker();
 }
 
 /* ---------- Ventana para elegir audio ---------- */
 
-function openAudioPicker() {
+function openAudioPicker(target) {
   if (!requireLoorAuth()) return;
+  audioPickerTarget = target === 'note' ? 'note' : 'loor';
   bindAudioPicker();
   document.getElementById('audio-picker-modal').classList.add('open');
   switchAudioTab('own');
