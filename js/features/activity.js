@@ -76,7 +76,7 @@ async function renderActivityDOM(events, container) {
   info.append(message);
   if (event.type === 'comment') {
    const cText = document.createElement('div');
-   cText.style.color = '#666666';
+   cText.style.color = 'var(--text-secondary)';
    cText.style.marginTop = '3px';
    cText.textContent = '“' + event.content + '”';
    info.append(cText);
@@ -141,7 +141,7 @@ async function loadUserOwnActivity() {
     text.innerHTML = '❤ Le diste <strong>Me gusta</strong> a una publicación.';
    } else if (ev.type === 'commented_post') {
     const span = document.createElement('span');
-    span.style.color = '#666666';
+    span.style.color = 'var(--text-secondary)';
     span.textContent = `“${ev.content}”`;
     text.textContent = '💬 Comentaste: ';
     text.append(span);

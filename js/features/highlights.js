@@ -331,7 +331,7 @@ function renderHighlightsListToDOM(highlights, userId, container) {
   const newDiv = document.createElement('div');
   newDiv.className = 'highlight-item';
   newDiv.onclick = () => createNewHighlightModal();
-  newDiv.innerHTML = `<div class="highlight-circle"><svg viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2" style="width:24px;height:24px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><span class="highlight-title">Nuevo</span>`;
+  newDiv.innerHTML = `<div class="highlight-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><span class="highlight-title">Nuevo</span>`;
   fragment.append(newDiv);
  }
 
