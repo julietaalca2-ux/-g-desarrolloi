@@ -10,12 +10,25 @@ const LOOR_DEFAULT_AVATAR = 'data:image/svg+xml,' + encodeURIComponent(
 
 let activeLoorIdForComments = null;
 const viewedLoorsSession = new Set();
-let loorVideoObserver = null;
 let loorsInitialized = false;
+let loorsLoadedAt = 0;                 // cuándo se cargó el listado (para reabrir sin volver a pedirlo)
+const LOORS_FEED_TTL_MS = 120000;
 
 function initLoors() {
   if (loorsInitialized) return;
   loorsInitialized = true;
+  // El motor (loors-engine.js) decide cuándo reproducir/pausar; aquí solo se le dice CÓMO hacerlo
+  LoorsEngine.configure({
+    play: playLoorCard,
+    pause: pauseLoorCard,
+    onActivate: (card) => {
+      const loorId = card.dataset.loorId;
+      if (!viewedLoorsSession.has(loorId)) {
+        viewedLoorsSession.add(loorId);
+        incrementLoorViews(loorId, card);
+      }
+    }
+  });
   bindLoorsUIEvents();
 }
 
@@ -24,6 +37,12 @@ async function openLoorsSection(targetLoorId) {
   const section = document.getElementById('loors-section');
   if (!section) return;
   section.classList.add('active');
+  // Reabrir poco después de cerrar: se reutiliza el listado (arranca al instante, sin volver a pedir todo)
+  const feed = document.getElementById('loors-feed-container');
+  if (!targetLoorId && feed && feed.querySelector('.loor-item') && Date.now() - loorsLoadedAt < LOORS_FEED_TTL_MS) {
+    LoorsEngine.resumeActive();
+    return;
+  }
   await loadLoorsFeed(targetLoorId);
 }
 
@@ -32,6 +51,7 @@ function closeLoorsSection() {
   if (!section) return;
   section.classList.remove('active');
   document.querySelectorAll('.loor-video, .loor-audio').forEach(media => media.pause());
+  LoorsEngine.suspend();   // libera los videos vecinos y deja todo en pausa
 }
 
 // Reproduce el video de una tarjeta y, si tiene música elegida, también su audio
@@ -39,11 +59,15 @@ function playLoorCard(card) {
   const video = card.querySelector('.loor-video');
   const audio = card.querySelector('.loor-audio');
 
+  LoorsEngine.ensureSource(card);   // por si el video de esta tarjeta había sido liberado
+
   video.play().then(() => {
     card.classList.remove('paused');
-  }).catch(() => {
+  }).catch((err) => {
+    // AbortError = se pausó antes de arrancar (la persona ya deslizó): no hay que silenciarlo
+    if (err && err.name === 'AbortError') return;
     video.muted = true;
-    video.play().catch(() => {});
+    video.play().then(() => card.classList.remove('paused')).catch(() => {});
   });
 
   // En iPhone el audio puede quedar bloqueado hasta que la persona toque la pantalla
@@ -90,6 +114,7 @@ async function loadLoorsFeed(targetLoorId) {
   // Detener cualquier video o audio anterior antes de recargar la lista
   document.querySelectorAll('.loor-video, .loor-audio').forEach(media => media.pause());
   if (loorsSentinelObserver) { loorsSentinelObserver.disconnect(); loorsSentinelObserver = null; }
+  LoorsEngine.reset();   // suelta los videos del listado anterior (corta descargas y libera memoria)
   loorsPage = 0;
   loorsHasMore = true;
 
@@ -132,8 +157,11 @@ async function loadLoorsFeed(targetLoorId) {
     }
 
     container.innerHTML = '';
+    // El primer video empieza a bajar ya, mientras se consultan perfiles, likes y comentarios
+    LoorsEngine.warmFirst(firstBatch[0]);
     await renderLoorsBatch(firstBatch, container);
     attachLoorsSentinel(container);
+    loorsLoadedAt = Date.now();
   } catch (err) {
     console.error('Loors: error al mostrar videos', err);
     if (token === loorsFeedToken && !container.querySelector('.loor-item')) {
@@ -244,8 +272,8 @@ async function renderLoorsBatch(loors, container) {
     card.dataset.loorId = loor.id;
 
     card.innerHTML = `
-      <video class="loor-video" src="${loor.video_url}" ${loor.thumbnail_url ? `poster="${escapeLoorHtml(loor.thumbnail_url)}"` : ''} playsinline loop preload="metadata" ${loor.audio_url ? 'muted' : ''}></video>
-      ${loor.audio_url ? `<audio class="loor-audio" src="${escapeLoorHtml(loor.audio_url)}" loop preload="none"></audio>` : ''}
+      <video class="loor-video" data-src="${escapeLoorHtml(loor.video_url)}" ${loor.thumbnail_url ? `data-poster="${escapeLoorHtml(loor.thumbnail_url)}"` : ''} playsinline webkit-playsinline loop preload="none" disablepictureinpicture disableremoteplayback ${loor.audio_url ? 'muted' : ''}></video>
+      ${loor.audio_url ? `<audio class="loor-audio" data-src="${escapeLoorHtml(loor.audio_url)}" loop preload="none"></audio>` : ''}
       <div class="loor-pause-indicator">❚❚</div>
 
       <div class="loor-overlay-wrapper">
@@ -314,11 +342,14 @@ async function renderLoorsBatch(loors, container) {
       </div>
     `;
 
+    // Si el primer video ya venía descargándose (warmFirst), la tarjeta lo adopta
+    LoorsEngine.adopt(card, loor.id);
+
     // Pausar / reanudar tocando el video
     const videoEl = card.querySelector('.loor-video');
-    // Si el video falla al cargar, se reintenta una vez
+    // Si el video falla al cargar, se reintenta una vez (no aplica si el motor lo liberó a propósito)
     videoEl.addEventListener('error', () => {
-      if (videoEl.dataset.retried) return;
+      if (!videoEl.getAttribute('src') || videoEl.dataset.retried) return;
       videoEl.dataset.retried = '1';
       setTimeout(() => { videoEl.load(); }, 1200);
     });
@@ -330,8 +361,10 @@ async function renderLoorsBatch(loors, container) {
         return;
       }
       if (videoEl.paused) {
+        LoorsEngine.setManualPause(card, false);
         playLoorCard(card);
       } else {
+        LoorsEngine.setManualPause(card, true);   // pausa manual: se respeta al volver a la app
         pauseLoorCard(card);
         card.classList.add('paused');
       }
@@ -356,46 +389,9 @@ async function renderLoorsBatch(loors, container) {
   setupLoorAutoplayObserver(newCards);
 }
 
-/* Si ya existe el observador solo se agregan los videos nuevos (al cargar más páginas) */
+/* El motor observa cada tarjeta (un solo IntersectionObserver): reproduce solo la visible y gestiona la precarga */
 function setupLoorAutoplayObserver(newCards) {
-  const container = document.getElementById('loors-feed-container');
-  if (loorVideoObserver && newCards && loorVideoObserver.root === container) {
-    newCards.forEach(item => loorVideoObserver.observe(item));
-    return;
-  }
-  if (loorVideoObserver) loorVideoObserver.disconnect();
-
-  loorVideoObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      const card = entry.target;
-      const video = card.querySelector('.loor-video');
-      const loorId = card.dataset.loorId;
-
-      if (entry.isIntersecting) {
-        playLoorCard(card);
-        const nextVideo = card.nextElementSibling && card.nextElementSibling.querySelector && card.nextElementSibling.querySelector('.loor-video');
-        if (nextVideo) nextVideo.preload = 'auto';
-
-        if (!viewedLoorsSession.has(loorId)) {
-          viewedLoorsSession.add(loorId);
-          incrementLoorViews(loorId, card);
-        }
-      } else {
-        video.pause();
-        video.currentTime = 0;
-        const audio = card.querySelector('.loor-audio');
-        if (audio) {
-          audio.pause();
-          audio.currentTime = 0;
-        }
-      }
-    });
-  }, {
-    root: document.getElementById('loors-feed-container'),
-    threshold: 0.75
-  });
-
-  (newCards || document.querySelectorAll('.loor-item')).forEach(item => loorVideoObserver.observe(item));
+  LoorsEngine.register(newCards || [], document.getElementById('loors-feed-container'));
 }
 
 async function incrementLoorViews(loorId, card) {
@@ -620,7 +616,7 @@ async function handleUploadLoor(e) {
 
     const { error: uploadError } = await db.storage
       .from('loors_videos')
-      .upload(filePath, file, { cacheControl: '31536000', upsert: false });
+      .upload(filePath, file, { cacheControl: '31536000', upsert: false, contentType: file.type || 'video/mp4' });
 
     if (uploadError) throw uploadError;
 
