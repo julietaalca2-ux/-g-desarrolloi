@@ -69,6 +69,8 @@
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
+  overscroll-behavior-y: contain; /* el rebote no arrastra la página de atrás */
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
 }
@@ -89,6 +91,7 @@
   justify-content: center;
   align-items: center;
   overflow: hidden;
+  contain: layout paint style; /* cada video se maqueta/pinta aparte: menos trabajo al deslizar */
 }
 
 .loor-video {
@@ -96,6 +99,7 @@
   height: 100%;
   object-fit: cover;
   cursor: pointer;
+  background: #000;
 }
 
 /* En computadoras, mantener formato vertical centrado 9:16 */
