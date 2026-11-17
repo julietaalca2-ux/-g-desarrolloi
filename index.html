@@ -923,9 +923,45 @@ Subir
 <input type="file" id="loor-video-file" accept="video/*" required>
 <textarea id="loor-desc-input" rows="2" placeholder="Descripción" maxlength="300"></textarea>
 <input type="text" id="loor-hashtags-input" placeholder="#hashtags separados por espacio">
-<input type="text" id="loor-audio-input" placeholder="Nombre del audio (opcional)">
+<div class="loor-audio-chooser">
+<button type="button" id="loor-audio-choose-btn" class="loor-audio-choose-btn" onclick="openAudioPicker()">🎵 Elegir audio</button>
+<div id="loor-audio-selected" class="loor-audio-selected">
+<span id="loor-audio-selected-name"></span>
+<button type="button" aria-label="Quitar audio" onclick="clearSelectedLoorAudio()">✕</button>
+</div>
+</div>
+<input type="text" id="loor-audio-input" placeholder="Nombre del audio original (opcional)">
 <button type="submit" id="loor-upload-submit" class="loor-submit-btn">Publicar Loor</button>
 </form>
+</div>
+</div>
+<!-- Loors: elegir audio (Mis audios / Música libre) -->
+<div id="audio-picker-modal" class="loor-modal-backdrop audio-picker-backdrop" onclick="if(event.target===this)closeAudioPicker()">
+<div class="loor-sheet audio-picker-sheet">
+<div class="loor-sheet-header">
+<span>Elegir audio</span>
+<button type="button" class="loor-close-modal" aria-label="Cerrar" onclick="closeAudioPicker()">✕</button>
+</div>
+<div class="audio-tabs">
+<button type="button" id="audio-tab-own" class="audio-tab active" onclick="switchAudioTab('own')">Mis audios</button>
+<button type="button" id="audio-tab-free" class="audio-tab" onclick="switchAudioTab('free')">Música libre</button>
+</div>
+<div id="audio-panel-own">
+<form id="audio-upload-form" class="audio-upload-form">
+<input type="text" id="audio-title-input" placeholder="Nombre del audio" maxlength="60">
+<input type="file" id="audio-file-input" accept="audio/*" required>
+<button type="submit" id="audio-upload-submit" class="loor-submit-btn">Guardar audio</button>
+</form>
+<div id="audio-own-list" class="audio-list"></div>
+</div>
+<div id="audio-panel-free" style="display:none;">
+<form id="audio-search-form" class="audio-search-form">
+<input type="text" id="audio-search-input" placeholder="Buscar canción o artista" autocomplete="off">
+<button type="submit" class="loor-submit-btn">Buscar</button>
+</form>
+<div id="audio-free-list" class="audio-list"></div>
+<p class="audio-credit-note">Música de <a href="https://www.jamendo.com" target="_blank" rel="noopener noreferrer">Jamendo</a> con licencia Creative Commons.</p>
+</div>
 </div>
 </div>
 <!-- 5. BARRA DE NAVEGACIÓN INFERIOR (FLOATING GLASSDOCK) -->
@@ -973,6 +1009,7 @@ Subir
 <script src="js/features/activity.js"></script>
 <script src="js/features/chat.js"></script>
 <script src="js/features/loors.js"></script>
+<script src="js/features/audio-library.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
