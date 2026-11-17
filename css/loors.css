@@ -6,7 +6,7 @@
   inset: 0;
   bottom: 60px; /* Altura de la barra de navegación inferior de ÖG */
   background-color: #000000;
-  z-index: 90;
+  z-index: 101; /* por encima del header fijo (z-index 100); la barra inferior queda libre por bottom: 60px */
   display: none;
   flex-direction: column;
   overflow: hidden;
@@ -404,4 +404,3 @@
   font-family: inherit;
   font-size: 0.9rem;
 }
-
