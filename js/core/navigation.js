@@ -140,6 +140,7 @@ function showTab(id, btn) {
 
  document.querySelectorAll('main>div').forEach(x => x.classList.remove('active'));
  document.getElementById(id).classList.add('active');
+ document.body.dataset.tab = id; // permite que CSS cambie el encabezado según la pestaña (Explorar)
  document.querySelectorAll('nav button').forEach(x => x.classList.remove('active'));
 
  if (btn) {
