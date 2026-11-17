@@ -1,6 +1,6 @@
 /* ÖG — Service Worker (og-mobile-dev) */
 
-const VERSION = '1.3.3';
+const VERSION = '1.4.0';
 const CACHE_PREFIX = 'og-mobile-dev-';
 const CACHE_NAME = CACHE_PREFIX + VERSION;
 
@@ -29,7 +29,11 @@ const APP_SHELL = [
   'css/calls.css',
   'css/profile.css',
   'css/settings.css',
+  'css/loors.css',
+  'css/notes.css',
+  'css/verification.css',
   'css/style.css',
+  'css/animations.css',
   'js/config.js',
   'js/state.js',
   'js/utils.js',
@@ -37,6 +41,7 @@ const APP_SHELL = [
   'js/core/pwa.js',
   'js/core/navigation.js',
   'js/core/realtime.js',
+  'js/core/stability.js',
   'js/features/activity.js',
   'js/features/auth.js',
   'js/features/chat.js',
@@ -48,6 +53,12 @@ const APP_SHELL = [
   'js/features/profile.js',
   'js/features/settings.js',
   'js/features/stories.js',
+  'js/features/loors.js',
+  'js/features/notes.js',
+  'js/features/audio-library.js',
+  'js/features/verified.badge.js',
+  'js/features/verification.js',
+  'js/features/verification-admin.js',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/apple-touch-icon.png'
