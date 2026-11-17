@@ -23,21 +23,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-  <!-- ESTILOS (CARGA PARALELA SIN @IMPORT BLOQUEANTE) -->
-  <link rel="stylesheet" href="css/variables.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/auth.css">
-  <link rel="stylesheet" href="css/header.css">
-  <link rel="stylesheet" href="css/layout.css">
-  <link rel="stylesheet" href="css/navigation.css">
-  <link rel="stylesheet" href="css/stories.css">
-  <link rel="stylesheet" href="css/camera.css">
-  <link rel="stylesheet" href="css/story-viewer.css">
-  <link rel="stylesheet" href="css/feed.css">
-  <link rel="stylesheet" href="css/explore.css">
-  <link rel="stylesheet" href="css/chat.css">
-  <link rel="stylesheet" href="css/profile.css">
-  <link rel="stylesheet" href="css/settings.css">
+  <!-- ESTILOS -->
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body id="appBody">
@@ -57,6 +43,11 @@
         <div id="authWelcomePanel" class="auth-panel active">
           <button class="primary" onclick="switchAuthSubView('signup')">Crear cuenta</button>
           <button class="secondary" onclick="switchAuthSubView('signin')">Iniciar sesión</button>
+          <button class="google-auth-button" onclick="signInWithGoogle()"><span class="google-g" aria-hidden="true">G</span> Continuar con Google</button>
+          <button type="button" class="facebook-auth-button" onclick="signInWithFacebook()">
+            <svg class="facebook-f" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            <span>Continuar con Facebook</span>
+          </button>
           <button class="secondary" id="authInstallAndroidBtn" style="display:none;" onclick="triggerAndroidInstall()">Instalar ÖG</button>
           <button class="secondary" id="authInstallIosBtn" style="display:none;" onclick="openIosInstallModal()">Cómo instalar ÖG</button>
         </div>
@@ -65,12 +56,21 @@
           <input class="field" id="regEmail" type="email" placeholder="Correo electrónico" autocomplete="email">
           <input class="field" id="regPassword" type="password" placeholder="Contraseña (mín. 8 caracteres)" autocomplete="new-password">
           <button class="primary" onclick="executeSignUp()">Registrarse</button>
+          <button type="button" class="facebook-auth-button" onclick="signInWithFacebook()">
+            <svg class="facebook-f" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            <span>Continuar con Facebook</span>
+          </button>
           <button class="secondary" onclick="switchAuthSubView('welcome')">Volver</button>
         </div>
         <div id="authSigninPanel" class="auth-panel">
           <input class="field" id="loginEmail" type="email" placeholder="Correo electrónico" autocomplete="email">
           <input class="field" id="loginPassword" type="password" placeholder="Contraseña" autocomplete="current-password">
           <button class="primary" onclick="executeSignIn()">Iniciar sesión</button>
+          <button class="google-auth-button" onclick="signInWithGoogle()"><span class="google-g" aria-hidden="true">G</span> Continuar con Google</button>
+          <button type="button" class="facebook-auth-button" onclick="signInWithFacebook()">
+            <svg class="facebook-f" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            <span>Continuar con Facebook</span>
+          </button>
           <button class="secondary" onclick="switchAuthSubView('welcome')">Volver</button>
         </div>
         <p id="authOverlayStatus" class="status"></p>
@@ -188,7 +188,7 @@
           <span class="muted" style="font-size:11.5px;">JPG, PNG, WEBP de alta resolución</span>
         </div>
         <div id="postImagePreviewContainer" style="display:none;margin-bottom:14px;position:relative;border-radius:var(--radius-md);overflow:hidden;aspect-ratio:4/5;background:var(--bg-subtle)">
-          <img id="postImagePreviewImg" style="width:100%;height:100%;object-fit:cover" alt="Previsualización" loading="lazy" decoding="async">
+          <img id="postImagePreviewImg" style="width:100%;height:100%;object-fit:cover" alt="Previsualización" loading="lazy">
           <button class="secondary" style="position:absolute;top:12px;right:12px;padding:6px 12px;font-size:12px;background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);" onclick="removePostImage()">Cambiar encuadre</button>
         </div>
         <input type="file" id="postImageFileInput" class="hidden-file" accept="image/jpeg,image/png,image/webp" onchange="handlePostImageSelect(this)">
@@ -665,6 +665,14 @@
         <strong style="font-size:16px;color:var(--text-primary);">Centro de cuentas</strong>
       </div>
       <div class="menu-section-content">
+        <div class="account-link-card">
+          <div class="account-link-copy">
+            <strong>Cuenta de Google</strong>
+            <span id="googleIdentityStatus">Comprobando estado...</span>
+          </div>
+          <button class="secondary" id="googleLinkButton" onclick="linkGoogleAccount()">Vincular cuenta de Google</button>
+          <p id="googleLinkStatus" class="status" aria-live="polite"></p>
+        </div>
         <input class="field" id="newPasswordInput" type="password" placeholder="Nueva contraseña">
         <button class="primary" style="margin-top:12px" onclick="updateUserPassword()">Actualizar contraseña</button>
         <p id="passwordStatus" class="status"></p>
@@ -722,7 +730,7 @@
       </div>
     </div>
     <div class="story-content-area" id="storyContentAreaContainer">
-      <img id="storyImage" src="" alt="Historia" decoding="async">
+      <img id="storyImage" src="" alt="Historia" loading="lazy">
     </div>
     <div class="story-bottom-bar">
       <input type="text" class="story-reply-input" placeholder="Enviar reflexión..." id="storyReplyInput">
@@ -751,7 +759,7 @@
       <button class="icon" onclick="closeHighlightViewer()" style="color:#fff;">✕</button>
     </div>
     <div class="story-content-area" id="highlightContentAreaContainer">
-      <img id="highlightViewerImage" src="" alt="Historia Destacada" decoding="async">
+      <img id="highlightViewerImage" src="" alt="Historia Destacada" loading="lazy">
     </div>
     <div class="story-bottom-bar" style="justify-content:center;color:#fff;font-size:13px;" id="highlightViewerCounter">1 / 1</div>
   </div>
@@ -924,22 +932,22 @@
   </nav>
 
   <!-- 6. SCRIPTS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="js/config.js" defer></script>
-  <script src="js/state.js" defer></script>
-  <script src="js/utils.js" defer></script>
-  <script src="js/core/pwa.js" defer></script>
-  <script src="js/core/navigation.js" defer></script>
-  <script src="js/core/realtime.js" defer></script>
-  <script src="js/features/settings.js" defer></script>
-  <script src="js/features/auth.js" defer></script>
-  <script src="js/features/feed.js" defer></script>
-  <script src="js/features/stories.js" defer></script>
-  <script src="js/features/highlights.js" defer></script>
-  <script src="js/features/explore.js" defer></script>
-  <script src="js/features/profile.js" defer></script>
-  <script src="js/features/activity.js" defer></script>
-  <script src="js/features/chat.js" defer></script>
-  <script src="js/app.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/core/pwa.js"></script>
+  <script src="js/core/navigation.js"></script>
+  <script src="js/core/realtime.js"></script>
+  <script src="js/features/settings.js"></script>
+  <script src="js/features/auth.js"></script>
+  <script src="js/features/feed.js"></script>
+  <script src="js/features/stories.js"></script>
+  <script src="js/features/highlights.js"></script>
+  <script src="js/features/explore.js"></script>
+  <script src="js/features/profile.js"></script>
+  <script src="js/features/activity.js"></script>
+  <script src="js/features/chat.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
