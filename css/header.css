@@ -12,7 +12,7 @@ header {
   top: 0;
   left: 0;
   right: 0;
-  background: rgba(251, 248, 252, 0.88);
+  background: var(--bg-glass);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   z-index: 100;

@@ -57,7 +57,7 @@
   border-radius: 50%;
   object-fit: cover;
   background: var(--bg-muted);
-  border: 2px solid #ffffff;
+  border: 2px solid var(--bg-main);
   box-shadow: var(--shadow-soft);
 }
 
@@ -79,7 +79,7 @@
 
 .note-text-input {
   width: 100%;
-  border: 1px solid #dddddd;
+  border: 1px solid var(--border-medium);
   border-radius: 14px;
   padding: 12px 52px 12px 14px;
   font-family: inherit;
@@ -91,7 +91,7 @@
   right: 12px;
   bottom: 14px;
   font-size: 0.72rem;
-  color: #888888;
+  color: var(--text-muted);
 }
 
 .note-audio-row {
@@ -106,7 +106,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  background: #eef3ff;
+  background: var(--accent-blue-subtle);
   border-radius: 10px;
   padding: 8px 12px;
   font-size: 0.85rem;
@@ -123,12 +123,12 @@
   border: none;
   font-size: 1rem;
   cursor: pointer;
-  color: #111111;
+  color: var(--text-primary);
 }
 
 .note-hint {
   font-size: 0.75rem;
-  color: #888888;
+  color: var(--text-muted);
   padding-top: 10px;
 }
 
@@ -176,7 +176,7 @@
 
 .note-viewer-time {
   font-size: 0.78rem;
-  color: #777777;
+  color: var(--text-muted);
 }
 
 .note-viewer-text {
@@ -189,14 +189,14 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #f6f6f8;
+  background: var(--bg-subtle);
   border-radius: 12px;
   padding: 10px;
 }
 
 .note-viewer-link {
   font-size: 0.78rem;
-  color: #555555;
+  color: var(--text-secondary);
 }
 
 .note-viewer-profile-btn {
