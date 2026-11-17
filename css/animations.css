@@ -25,6 +25,8 @@
 main > div.og-tab-enter {
   animation: ogFadeUp 0.24s var(--og-ease) both;
 }
+/* Explorar y Perfil tienen grillas/videos pesados: sin animación de pestaña para que no se trabe */
+#explore.og-tab-enter, #profile.og-tab-enter { animation: none; }
 
 /* ---------- Feed: publicaciones que aparecen ---------- */
 .post {
@@ -58,11 +60,11 @@ main > div.og-tab-enter {
 .comment-item { animation: ogFadeUp 0.28s var(--og-ease) both; }
 
 /* ---------- Explorar / cuadrículas ---------- */
-.explore-grid-item, .ig-grid-item { animation: ogPopIn 0.3s var(--og-ease) both; transition: transform 0.15s var(--og-ease); }
+.explore-grid-item, .ig-grid-item { transition: transform 0.15s var(--og-ease); } /* sin animación de entrada: se reiniciaba en cada cambio de pestaña */
 .explore-grid-item:active, .ig-grid-item:active { transform: scale(0.97); }
 
 /* ---------- Historias y destacadas ---------- */
-.story, .highlight-item { animation: ogPopIn 0.35s var(--og-ease) both; transition: transform 0.15s var(--og-ease); }
+.story, .highlight-item { transition: transform 0.15s var(--og-ease); }
 .story:nth-child(2), .highlight-item:nth-child(2) { animation-delay: 0.04s; }
 .story:nth-child(3), .highlight-item:nth-child(3) { animation-delay: 0.08s; }
 .story:nth-child(4), .highlight-item:nth-child(4) { animation-delay: 0.12s; }
@@ -70,10 +72,8 @@ main > div.og-tab-enter {
 .story:active, .highlight-item:active { transform: scale(0.94); }
 
 /* ---------- Perfil ---------- */
-.profile-header-modern { animation: ogFadeUp 0.4s var(--og-ease) both; }
-.profile-stat-box { animation: ogFadeUp 0.45s var(--og-ease) both; }
-.profile-stat-box:nth-child(2) { animation-delay: 0.05s; }
-.profile-stat-box:nth-child(3) { animation-delay: 0.10s; }
+.profile-header-modern { }
+.profile-stat-box { }
 .profile-tab-btn { transition: color 0.2s ease, transform 0.15s var(--og-ease); }
 .profile-tab-btn:active { transform: scale(0.95); }
 .profile-tab-content-pane.active { animation: ogFadeIn 0.25s ease both; }
