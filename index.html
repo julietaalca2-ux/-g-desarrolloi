@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#fbf8fc">
+<!-- TEMA: se aplica antes de pintar para evitar el parpadeo en blanco -->
+<script>
+(function () {
+  try {
+    var pref = localStorage.getItem('og_theme') || 'light';
+    var theme = pref === 'auto'
+      ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : pref;
+    if (['light', 'gray', 'dark', 'black'].indexOf(theme) === -1) theme = 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+    var colors = { light: '#fbf8fc', gray: '#e4e4e7', dark: '#121214', black: '#000000' };
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', colors[theme]);
+  } catch (e) {}
+})();
+</script>
 <meta name="application-name" content="ÖG">
 <meta name="mobile-web-app-capable" content="yes">
 <title>ÖG — Social</title>
@@ -388,9 +403,9 @@ Tu historia
 <button class="secondary" style="padding:2px 6px;font-size:11px;" onclick="cancelReply()">✕</button>
 </div>
 <div class="chat-input-row">
-<input type="text" class="story-reply-input" id="chatMessageInput" placeholder="Escribe un mensaje..." style="border-color:var(--border-medium); color:var(--text-primary);" onkeypress="if(event.key==='Enter')sendChatMessage()">
-<button class="primary" style="width:auto;padding:10px 18px;border-radius:var(--radius-full);" onclick="sendChatMessage()">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+<textarea class="chat-message-input" id="chatMessageInput" rows="1" placeholder="Escribe un mensaje..." oninput="autoGrowChatInput(this)" onkeydown="handleChatInputKey(event)"></textarea>
+<button class="primary chat-send-btn" onclick="sendChatMessage()" aria-label="Enviar">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
 </button>
 </div>
 </div>
@@ -546,6 +561,27 @@ Tu historia
 <strong style="font-size:16px;color:var(--text-primary);">Configuración</strong>
 </div>
 <div class="menu-section-content">
+<div class="settings-group">
+<h4 class="settings-group-title">Apariencia</h4>
+<p class="settings-row-desc" style="margin:0 0 12px 0;">Elegí la tonalidad de la aplicación.</p>
+<div class="theme-picker" id="themePicker" role="radiogroup" aria-label="Tema de la aplicación">
+<button type="button" class="theme-option" data-theme-opt="auto" role="radio" aria-checked="false" onclick="setTheme('auto')">
+<span class="theme-swatch"></span><span class="theme-name">Automático</span>
+</button>
+<button type="button" class="theme-option" data-theme-opt="light" role="radio" aria-checked="false" onclick="setTheme('light')">
+<span class="theme-swatch"></span><span class="theme-name">Blanco</span>
+</button>
+<button type="button" class="theme-option" data-theme-opt="gray" role="radio" aria-checked="false" onclick="setTheme('gray')">
+<span class="theme-swatch"></span><span class="theme-name">Gris</span>
+</button>
+<button type="button" class="theme-option" data-theme-opt="dark" role="radio" aria-checked="false" onclick="setTheme('dark')">
+<span class="theme-swatch"></span><span class="theme-name">Oscuro</span>
+</button>
+<button type="button" class="theme-option" data-theme-opt="black" role="radio" aria-checked="false" onclick="setTheme('black')">
+<span class="theme-swatch"></span><span class="theme-name">Negro</span>
+</button>
+</div>
+</div>
 <div class="settings-group">
 <h4 class="settings-group-title">Preferencias de la aplicación</h4>
 <div class="settings-row">
