@@ -33,8 +33,9 @@
 
   /* ---------------------------- Acceso ---------------------------- */
   async function isAdmin() {
-    var res = await sb().rpc('is_verification_admin');
-    return !res.error && res.data === true;
+    var res = await VS().withTimeout(sb().rpc('is_verification_admin'), 12000, 'permisos');
+    if (res.error) throw new Error(res.error.message);
+    return res.data === true;
   }
 
   /* ----------------------------- Datos ----------------------------- */
@@ -324,7 +325,12 @@
     root.innerHTML = '<div class="vadm__denied">Comprobando permisos…</div>';
 
     var ok = false;
-    try { ok = await isAdmin(); } catch (err) { ok = false; }
+    try {
+      ok = await isAdmin();
+    } catch (err) {
+      root.innerHTML = '<div class="vadm__denied">No se pudo comprobar tu acceso: ' + esc(err.message) + '</div>';
+      return false;
+    }
 
     if (!ok) {
       root.innerHTML = '<div class="vadm__denied">No tienes permisos para ver este panel.</div>';
