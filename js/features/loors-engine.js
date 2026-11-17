@@ -125,10 +125,16 @@ window.LoorsEngine = (function () {
       attached.add(card);
     }
     if (preload && preload !== 'none' && v.preload !== preload) v.preload = preload;
-    const a = s.a;
-    if (a && withAudio && !a.getAttribute('src') && a.dataset.src) {
+    if (withAudio) attachAudio(card);
+  }
+
+  /* El audio pesa mucho menos que el video: se prepara por adelantado y sin esperar al video */
+  function attachAudio(card) {
+    const a = S(card).a;
+    if (a && !a.getAttribute('src') && a.dataset.src) {
       a.preload = 'auto';
       a.src = a.dataset.src;
+      try { a.load(); } catch (e) {}
     }
   }
 
@@ -178,7 +184,7 @@ window.LoorsEngine = (function () {
       for (let k = 1; k <= t.ahead; k++) {
         const c = cards[a + k];
         if (!c) break;
-        attach(c, k === 1 ? t.next : 'metadata', k === 1 && name !== 'low');
+        attach(c, k === 1 ? t.next : 'metadata', false);   // el audio ya se pidió en applyWindow
       }
     };
 
@@ -200,6 +206,9 @@ window.LoorsEngine = (function () {
       if (i < lo || i > hi) detach(c);   // fuera de la ventana: se cancela su descarga
     });
     attach(activeCard, 'auto', true);
+    // Audio de los próximos Loors YA, sin esperar al video activo (así no llega tarde al deslizar)
+    const audioAhead = Math.max(t.ahead, tierName() === 'none' ? 0 : 2);
+    for (let k = 1; k <= audioAhead; k++) { if (cards[a + k]) attachAudio(cards[a + k]); }
     for (let i = Math.max(0, a - 1); i <= Math.min(cards.length - 1, a + POSTER_AHEAD); i++) setPoster(cards[i]);
     scheduleAhead();
   }
@@ -324,6 +333,7 @@ window.LoorsEngine = (function () {
       try { w.v.pause(); } catch (e) {}
       w.v.removeAttribute('src');
       try { w.v.load(); } catch (e) {}
+      if (w.a) { w.a.removeAttribute('src'); try { w.a.load(); } catch (e) {} }
     });
     warmed.clear();
   }
@@ -342,12 +352,22 @@ window.LoorsEngine = (function () {
     v.dataset.src = loor.video_url;
     if (loor.thumbnail_url) { v.dataset.poster = loor.thumbnail_url; v.setAttribute('poster', loor.thumbnail_url); }
     setSource(v, loor.video_url, !!loor.thumbnail_url);
+    let au = null;
+    if (loor.audio_url) {
+      au = document.createElement('audio');
+      au.className = 'loor-audio';
+      au.loop = true;
+      au.preload = 'auto';
+      au.dataset.src = loor.audio_url;
+      au.src = loor.audio_url;
+    }
     const id = String(loor.id);
-    warmed.set(id, { v: v, timer: setTimeout(function () {
+    warmed.set(id, { v: v, a: au, timer: setTimeout(function () {
       const w = warmed.get(id);
       if (!w) return;
       w.v.removeAttribute('src');
       try { w.v.load(); } catch (e) {}
+      if (w.a) { w.a.removeAttribute('src'); try { w.a.load(); } catch (e) {} }
       warmed.delete(id);
     }, WARM_TTL_MS) });
   }
@@ -363,6 +383,12 @@ window.LoorsEngine = (function () {
     if (old.dataset.poster) w.v.dataset.poster = old.dataset.poster;
     old.replaceWith(w.v);
     const s = S(card);
+    const oldAudio = card.querySelector('.loor-audio');
+    if (w.a && oldAudio) {
+      w.a.dataset.src = oldAudio.dataset.src || w.a.dataset.src;
+      oldAudio.replaceWith(w.a);
+      s.a = w.a;
+    }
     s.v = w.v;
     s.attached = true;
     attached.add(card);
