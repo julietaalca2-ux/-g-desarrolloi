@@ -1,59 +1,41 @@
-// ==========================================
-// MÓDULO LOORS - ÖG
-// ==========================================
-// Ajustá la ruta de importación según dónde tengas tu cliente de Supabase en ÖG
-import { supabase } from './supabase.js';
+/* ==========================================
+   FEATURE: LOORS (Videos verticales 9:16)
+   Depende de: db (Supabase), currentUser
+   ========================================== */
 
-let currentUser = null;
 let activeLoorIdForComments = null;
-let viewedLoorsSession = new Set();
-let videoObserver = null;
+const viewedLoorsSession = new Set();
+let loorVideoObserver = null;
+let loorsInitialized = false;
 
-/**
- * Inicializa la sección LOORS y sus eventos
- */
-export async function initLoors() {
-  const { data: { session } } = await supabase.auth.getSession();
-  currentUser = session?.user || null;
-
-  supabase.auth.onAuthStateChange((_event, session) => {
-    currentUser = session?.user || null;
-  });
-
+function initLoors() {
+  if (loorsInitialized) return;
+  loorsInitialized = true;
   bindLoorsUIEvents();
 }
 
-/**
- * Abre la sección LOORS, carga los videos y activa el autoplay
- */
-export async function openLoorsSection() {
+async function openLoorsSection() {
+  initLoors();
   const section = document.getElementById('loors-section');
   if (!section) return;
   section.classList.add('active');
   await loadLoorsFeed();
 }
 
-/**
- * Cierra la sección LOORS y pausa cualquier video en reproducción
- */
-export function closeLoorsSection() {
+function closeLoorsSection() {
   const section = document.getElementById('loors-section');
   if (!section) return;
   section.classList.remove('active');
   document.querySelectorAll('.loor-video').forEach(video => video.pause());
 }
 
-/**
- * Carga todos los LOORS desde Supabase junto con perfiles, likes, comentarios y guardados
- */
-export async function loadLoorsFeed() {
+async function loadLoorsFeed() {
   const container = document.getElementById('loors-feed-container');
   if (!container) return;
 
-  container.innerHTML = `<div style="color:#fff;text-align:center;margin-top:45vh;">Cargando LOORS...</div>`;
+  container.innerHTML = `<div style="color:#fff;text-align:center;margin-top:45vh;font-size:0.95rem;">Cargando LOORS...</div>`;
 
-  // 1. Obtener loors ordenados por más recientes
-  const { data: loors, error } = await supabase
+  const { data: loors, error } = await db
     .from('loors')
     .select('*')
     .order('created_at', { ascending: false });
@@ -66,27 +48,27 @@ export async function loadLoorsFeed() {
 
   if (!loors || loors.length === 0) {
     container.innerHTML = `
-      <div style="color:#fff;text-align:center;margin-top:40vh;padding:0 24px;">
+      <div style="color:#fff;text-align:center;margin-top:38vh;padding:0 24px;">
         <p style="font-size:1.1rem;font-weight:700;margin-bottom:8px;">Aún no hay LOORS</p>
-        <p style="font-size:0.9rem;opacity:0.75;margin-bottom:16px;">Sé el primero en subir un video vertical a ÖG.</p>
-        <button class="loor-submit-btn" style="background:#fff;color:#000;" onclick="document.getElementById('loors-upload-modal').classList.add('open')">Subir primer Loor</button>
+        <p style="font-size:0.9rem;opacity:0.75;margin-bottom:18px;">Subí el primer video vertical en ÖG.</p>
+        <button class="loor-submit-btn" style="background:#fff;color:#000;" onclick="document.getElementById('loors-upload-modal').classList.add('open')">Subir Loor</button>
       </div>`;
     return;
   }
 
-  // 2. Obtener perfiles de creadores, likes, comentarios, guardados y seguidos en paralelo
   const userIds = [...new Set(loors.map(l => l.user_id))];
   const loorIds = loors.map(l => l.id);
 
+  // Nota: si tu tabla de perfiles en ÖG es 'og_profiles' en lugar de 'profiles', cambiá 'profiles' por 'og_profiles' aquí abajo:
   const [profilesRes, likesRes, commentsRes, savesRes, followsRes] = await Promise.all([
-    supabase.from('profiles').select('id, username, full_name, avatar_url').in('id', userIds),
-    supabase.from('loor_likes').select('loor_id, user_id').in('loor_id', loorIds),
-    supabase.from('loor_comments').select('loor_id').in('loor_id', loorIds),
+    db.from('og_profiles').select('id, username, full_name, avatar_url').in('id', userIds),
+    db.from('loor_likes').select('loor_id, user_id').in('loor_id', loorIds),
+    db.from('loor_comments').select('loor_id').in('loor_id', loorIds),
     currentUser
-      ? supabase.from('loor_saves').select('loor_id').eq('user_id', currentUser.id)
+      ? db.from('loor_saves').select('loor_id').eq('user_id', currentUser.id)
       : Promise.resolve({ data: [] }),
     currentUser
-      ? supabase.from('follows').select('following_id').eq('follower_id', currentUser.id)
+      ? db.from('follows').select('following_id').eq('follower_id', currentUser.id)
       : Promise.resolve({ data: [] })
   ]);
 
@@ -124,7 +106,6 @@ export async function loadLoorsFeed() {
       <div class="loor-pause-indicator">❚❚</div>
 
       <div class="loor-overlay-wrapper">
-        <!-- Barra lateral derecha -->
         <div class="loor-actions-bar">
           <button class="loor-action-btn btn-like ${isLiked ? 'liked' : ''}" data-id="${loor.id}" aria-label="Me gusta">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -147,7 +128,7 @@ export async function loadLoorsFeed() {
             <span class="loor-action-count">${isSaved ? 'Guardado' : 'Guardar'}</span>
           </button>
 
-          <button class="loor-action-btn btn-share" data-id="${loor.id}" data-url="${loor.video_url}" data-desc="${escapeHtml(loor.description)}" aria-label="Compartir">
+          <button class="loor-action-btn btn-share" data-id="${loor.id}" data-desc="${escapeLoorHtml(loor.description)}" aria-label="Compartir">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
               <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
@@ -156,12 +137,11 @@ export async function loadLoorsFeed() {
           </button>
         </div>
 
-        <!-- Información inferior izquierda -->
         <div class="loor-info-panel">
           <div class="loor-creator-row">
             <div class="loor-creator-link" data-user-id="${loor.user_id}">
-              <img class="loor-avatar" src="${creator.avatar_url || 'assets/default-avatar.png'}" alt="${escapeHtml(creator.username)}">
-              <span class="loor-username">@${escapeHtml(creator.username)}</span>
+              <img class="loor-avatar" src="${creator.avatar_url || 'assets/default-avatar.png'}" alt="${escapeLoorHtml(creator.username)}">
+              <span class="loor-username">@${escapeLoorHtml(creator.username)}</span>
             </div>
             ${!isOwnVideo ? `
               <button class="loor-follow-btn ${isFollowing ? 'following' : ''}" data-creator-id="${loor.user_id}">
@@ -170,13 +150,13 @@ export async function loadLoorsFeed() {
             ` : ''}
           </div>
 
-          ${loor.description ? `<p class="loor-description">${escapeHtml(loor.description)}</p>` : ''}
-          ${hashtagsFormatted ? `<p class="loor-hashtags">${escapeHtml(hashtagsFormatted)}</p>` : ''}
+          ${loor.description ? `<p class="loor-description">${escapeLoorHtml(loor.description)}</p>` : ''}
+          ${hashtagsFormatted ? `<p class="loor-hashtags">${escapeLoorHtml(hashtagsFormatted)}</p>` : ''}
 
           <div class="loor-meta-row">
             <div class="loor-audio-pill">
               <span>🎵</span>
-              <span>${escapeHtml(loor.audio_name || 'Audio original')}</span>
+              <span>${escapeLoorHtml(loor.audio_name || 'Audio original')}</span>
             </div>
             <span class="loor-views-text">👁️ <b class="views-number">${loor.views_count || 0}</b> reproducciones</span>
           </div>
@@ -184,7 +164,7 @@ export async function loadLoorsFeed() {
       </div>
     `;
 
-    // Pausar / Reanudar al tocar el video
+    // Pausar / reanudar tocando el video
     const videoEl = card.querySelector('.loor-video');
     videoEl.addEventListener('click', () => {
       if (videoEl.paused) {
@@ -196,35 +176,26 @@ export async function loadLoorsFeed() {
       }
     });
 
-    // Acceso al perfil del creador (conectado a tu sistema existente de ÖG)
+    // Abrir perfil del creador usando las funciones globales existentes de ÖG
     card.querySelector('.loor-creator-link').addEventListener('click', () => {
       closeLoorsSection();
-      // Si en ÖG usás openUserProfile(userId) o similar, se invoca aquí:
-      if (typeof window.openUserProfile === 'function') {
-        window.openUserProfile(loor.user_id);
-      } else {
-        window.dispatchEvent(new CustomEvent('og:navigate-profile', { detail: { userId: loor.user_id } }));
+      if (typeof viewUserProfile === 'function') {
+        viewUserProfile(loor.user_id);
+      } else if (typeof openUserProfile === 'function') {
+        openUserProfile(loor.user_id);
       }
     });
 
     container.appendChild(card);
   });
 
-  setupAutoplayObserver();
+  setupLoorAutoplayObserver();
 }
 
-/**
- * Configura IntersectionObserver para autoplay y contador de vistas
- */
-function setupAutoplayObserver() {
-  if (videoObserver) videoObserver.disconnect();
+function setupLoorAutoplayObserver() {
+  if (loorVideoObserver) loorVideoObserver.disconnect();
 
-  const options = {
-    root: document.getElementById('loors-feed-container'),
-    threshold: 0.75
-  };
-
-  videoObserver = new IntersectionObserver((entries) => {
+  loorVideoObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       const card = entry.target;
       const video = card.querySelector('.loor-video');
@@ -234,90 +205,88 @@ function setupAutoplayObserver() {
         video.play().then(() => {
           card.classList.remove('paused');
         }).catch(() => {
-          // Si el navegador bloquea autoplay con sonido, intenta silenciado
           video.muted = true;
           video.play();
         });
 
-        // Contabilizar reproducción 1 vez por sesión
         if (!viewedLoorsSession.has(loorId)) {
           viewedLoorsSession.add(loorId);
-          incrementViews(loorId, card);
+          incrementLoorViews(loorId, card);
         }
       } else {
         video.pause();
         video.currentTime = 0;
       }
     });
-  }, options);
+  }, {
+    root: document.getElementById('loors-feed-container'),
+    threshold: 0.75
+  });
 
-  document.querySelectorAll('.loor-item').forEach(item => videoObserver.observe(item));
+  document.querySelectorAll('.loor-item').forEach(item => loorVideoObserver.observe(item));
 }
 
-async function incrementViews(loorId, card) {
-  const { error } = await supabase.rpc('increment_loor_views', { target_loor_id: loorId });
+async function incrementLoorViews(loorId, card) {
+  const { error } = await db.rpc('increment_loor_views', { target_loor_id: loorId });
   if (!error) {
     const numEl = card.querySelector('.views-number');
     if (numEl) numEl.textContent = parseInt(numEl.textContent || '0', 10) + 1;
   }
 }
 
-/**
- * Eventos delegados para Likes, Comentarios, Favoritos, Seguir, Compartir y Subida
- */
 function bindLoorsUIEvents() {
   const feed = document.getElementById('loors-feed-container');
   if (!feed) return;
 
   feed.addEventListener('click', async (e) => {
-    // 1. ME GUSTA
+    // ME GUSTA
     const likeBtn = e.target.closest('.btn-like');
     if (likeBtn) {
-      if (!requireAuth()) return;
+      if (!requireLoorAuth()) return;
       const loorId = likeBtn.dataset.id;
       const countEl = likeBtn.querySelector('.like-count');
-      let count = parseInt(countEl.textContent, 10);
+      const count = parseInt(countEl.textContent, 10);
 
       if (likeBtn.classList.contains('liked')) {
         likeBtn.classList.remove('liked');
         countEl.textContent = Math.max(0, count - 1);
-        await supabase.from('loor_likes').delete().match({ loor_id: loorId, user_id: currentUser.id });
+        await db.from('loor_likes').delete().match({ loor_id: loorId, user_id: currentUser.id });
       } else {
         likeBtn.classList.add('liked');
         countEl.textContent = count + 1;
-        await supabase.from('loor_likes').insert({ loor_id: loorId, user_id: currentUser.id });
+        await db.from('loor_likes').insert({ loor_id: loorId, user_id: currentUser.id });
       }
       return;
     }
 
-    // 2. GUARDAR EN FAVORITOS
+    // FAVORITOS
     const saveBtn = e.target.closest('.btn-save');
     if (saveBtn) {
-      if (!requireAuth()) return;
+      if (!requireLoorAuth()) return;
       const loorId = saveBtn.dataset.id;
       const labelEl = saveBtn.querySelector('.loor-action-count');
 
       if (saveBtn.classList.contains('saved')) {
         saveBtn.classList.remove('saved');
         labelEl.textContent = 'Guardar';
-        await supabase.from('loor_saves').delete().match({ loor_id: loorId, user_id: currentUser.id });
+        await db.from('loor_saves').delete().match({ loor_id: loorId, user_id: currentUser.id });
       } else {
         saveBtn.classList.add('saved');
         labelEl.textContent = 'Guardado';
-        await supabase.from('loor_saves').insert({ loor_id: loorId, user_id: currentUser.id });
+        await db.from('loor_saves').insert({ loor_id: loorId, user_id: currentUser.id });
       }
       return;
     }
 
-    // 3. COMENTARIOS
+    // COMENTARIOS
     const commentBtn = e.target.closest('.btn-comment');
     if (commentBtn) {
       activeLoorIdForComments = commentBtn.dataset.id;
-      openCommentsModal(activeLoorIdForComments);
+      openLoorCommentsModal(activeLoorIdForComments);
       return;
     }
 
-    // 4. COMPARTIR
+    // COMPARTIR
     const shareBtn = e.target.closest('.btn-share');
     if (shareBtn) {
       const shareData = {
@@ -329,81 +298,75 @@ function bindLoorsUIEvents() {
         try { await navigator.share(shareData); } catch (_) {}
       } else {
         await navigator.clipboard.writeText(shareData.url);
-        alert('Enlace del Loor copiado al portapapeles');
+        if (typeof showToast === 'function') showToast('Enlace copiado');
+        else alert('Enlace del Loor copiado al portapapeles');
       }
       return;
     }
 
-    // 5. SEGUIR AL CREADOR
+    // SEGUIR AL CREADOR
     const followBtn = e.target.closest('.loor-follow-btn');
     if (followBtn) {
-      if (!requireAuth()) return;
+      if (!requireLoorAuth()) return;
       const creatorId = followBtn.dataset.creatorId;
       if (followBtn.classList.contains('following')) {
         followBtn.classList.remove('following');
         followBtn.textContent = 'Seguir';
-        await supabase.from('follows').delete().match({ follower_id: currentUser.id, following_id: creatorId });
+        await db.from('follows').delete().match({ follower_id: currentUser.id, following_id: creatorId });
       } else {
         followBtn.classList.add('following');
         followBtn.textContent = 'Siguiendo';
-        await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: creatorId });
+        await db.from('follows').insert({ follower_id: currentUser.id, following_id: creatorId });
       }
     }
   });
 
-  // Formulario de nuevo comentario
-  const commentForm = document.getElementById('loor-comment-form');
-  if (commentForm) {
-    commentForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!requireAuth() || !activeLoorIdForComments) return;
-      const input = document.getElementById('loor-comment-input');
-      const content = input.value.trim();
-      if (!content) return;
+  // Nuevo comentario
+  document.getElementById('loor-comment-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!requireLoorAuth() || !activeLoorIdForComments) return;
+    const input = document.getElementById('loor-comment-input');
+    const content = input.value.trim();
+    if (!content) return;
 
-      input.value = '';
-      const { error } = await supabase.from('loor_comments').insert({
-        loor_id: activeLoorIdForComments,
-        user_id: currentUser.id,
-        content
-      });
-
-      if (!error) {
-        await openCommentsModal(activeLoorIdForComments);
-        // Actualizar contador en tarjeta
-        const card = document.querySelector(`.loor-item[data-loor-id="${activeLoorIdForComments}"] .comment-count`);
-        if (card) card.textContent = parseInt(card.textContent, 10) + 1;
-      }
+    input.value = '';
+    const { error } = await db.from('loor_comments').insert({
+      loor_id: activeLoorIdForComments,
+      user_id: currentUser.id,
+      content
     });
-  }
 
-  // Formulario de subida de video desde galería
-  const uploadForm = document.getElementById('loor-upload-form');
-  if (uploadForm) {
-    uploadForm.addEventListener('submit', handleUploadLoor);
-  }
+    if (!error) {
+      await openLoorCommentsModal(activeLoorIdForComments);
+      const countEl = document.querySelector(`.loor-item[data-loor-id="${activeLoorIdForComments}"] .comment-count`);
+      if (countEl) countEl.textContent = parseInt(countEl.textContent, 10) + 1;
+    }
+  });
+
+  // Subir video desde galería
+  document.getElementById('loor-upload-form')?.addEventListener('submit', handleUploadLoor);
 }
 
-async function openCommentsModal(loorId) {
+async function openLoorCommentsModal(loorId) {
   const modal = document.getElementById('loors-comments-modal');
   const list = document.getElementById('loor-comments-list');
   modal.classList.add('open');
   list.innerHTML = '<p style="text-align:center;color:#666;">Cargando comentarios...</p>';
 
-  const { data: comments } = await supabase
+  const { data: comments } = await db
     .from('loor_comments')
     .select('*')
     .eq('loor_id', loorId)
     .order('created_at', { ascending: true });
 
   if (!comments || comments.length === 0) {
-    list.innerHTML = '<p style="text-align:center;color:#888;margin-top:20px;">Aún no hay comentarios. ¡Escribí el primero!</p>';
+    list.innerHTML = '<p style="text-align:center;color:#888;margin-top:20px;">Aún no hay comentarios.</p>';
     return;
   }
 
   const userIds = [...new Set(comments.map(c => c.user_id))];
-  const { data: profiles } = await supabase
-    .from('profiles')
+  const { data: profiles } = await db
+    .from('og_profiles')
     .select('id, username, avatar_url')
     .in('id', userIds);
 
@@ -415,8 +378,8 @@ async function openCommentsModal(loorId) {
       <div class="loor-comment-item">
         <img src="${u.avatar_url || 'assets/default-avatar.png'}" alt="">
         <div>
-          <strong>@${escapeHtml(u.username)}</strong>
-          <p style="margin:2px 0 0;">${escapeHtml(c.content)}</p>
+          <strong>@${escapeLoorHtml(u.username)}</strong>
+          <p style="margin:2px 0 0;">${escapeLoorHtml(c.content)}</p>
         </div>
       </div>
     `;
@@ -425,19 +388,15 @@ async function openCommentsModal(loorId) {
 
 async function handleUploadLoor(e) {
   e.preventDefault();
-  if (!requireAuth()) return;
+  if (!requireLoorAuth()) return;
 
-  const fileInput = document.getElementById('loor-video-file');
-  const descInput = document.getElementById('loor-desc-input');
-  const tagsInput = document.getElementById('loor-hashtags-input');
-  const audioInput = document.getElementById('loor-audio-input');
+  const file = document.getElementById('loor-video-file').files[0];
+  const desc = document.getElementById('loor-desc-input').value.trim();
+  const tagsRaw = document.getElementById('loor-hashtags-input').value;
+  const audioName = document.getElementById('loor-audio-input').value.trim() || 'Audio original';
   const submitBtn = document.getElementById('loor-upload-submit');
 
-  const file = fileInput.files[0];
-  if (!file) {
-    alert('Seleccioná un video vertical de tu galería.');
-    return;
-  }
+  if (!file) return;
 
   submitBtn.disabled = true;
   submitBtn.textContent = 'Subiendo video...';
@@ -446,57 +405,52 @@ async function handleUploadLoor(e) {
     const fileExt = file.name.split('.').pop();
     const filePath = `${currentUser.id}/${Date.now()}.${fileExt}`;
 
-    // 1. Subir a Supabase Storage
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await db.storage
       .from('loors_videos')
       .upload(filePath, file, { cacheControl: '3600', upsert: false });
 
     if (uploadError) throw uploadError;
 
-    // 2. Obtener URL pública
-    const { data: publicUrlData } = supabase.storage
+    const { data: publicUrlData } = db.storage
       .from('loors_videos')
       .getPublicUrl(filePath);
 
-    // 3. Procesar hashtags
-    const hashtagsArray = tagsInput.value
+    const hashtagsArray = tagsRaw
       .split(/[\s,]+/)
       .map(t => t.replace(/^#/, '').trim())
       .filter(Boolean);
 
-    // 4. Guardar registro en base de datos
-    const { error: dbError } = await supabase.from('loors').insert({
+    const { error: dbError } = await db.from('loors').insert({
       user_id: currentUser.id,
       video_url: publicUrlData.publicUrl,
-      description: descInput.value.trim(),
+      description: desc,
       hashtags: hashtagsArray,
-      audio_name: audioInput.value.trim() || 'Audio original'
+      audio_name: audioName
     });
 
     if (dbError) throw dbError;
 
-    // Resetear y recargar feed
     e.target.reset();
     document.getElementById('loors-upload-modal').classList.remove('open');
     await loadLoorsFeed();
   } catch (err) {
-    console.error('Error al publicar Loor:', err);
-    alert('No se pudo subir el video: ' + err.message);
+    console.error('Error subiendo Loor:', err);
+    alert('Error al subir el video: ' + err.message);
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Publicar Loor';
   }
 }
 
-function requireAuth() {
+function requireLoorAuth() {
   if (!currentUser) {
-    alert('Iniciá sesión en ÖG para interactuar o subir videos en LOORS.');
+    if (typeof showAuthOverlay === 'function') showAuthOverlay();
     return false;
   }
   return true;
 }
 
-function escapeHtml(str) {
+function escapeLoorHtml(str) {
   if (!str) return '';
   return str
     .replace(/&/g, '&amp;')
@@ -504,4 +458,3 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-
