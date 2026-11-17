@@ -31,6 +31,9 @@ let pendingStoryImageForHighlight = null;
 let highlightsCacheByUser = {};
 let currentHighlightItems = [];
 let currentHighlightIndex = 0;
+let currentHighlightObj = null;
+let currentHighlightItemIds = [];
+let currentHighlightOwnerId = null;
 let isUploadingStory = false;
 let isSavingHighlight = false;
 

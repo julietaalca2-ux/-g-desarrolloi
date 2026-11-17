@@ -10,14 +10,3 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   storage: window.localStorage
  }
 });
-
-/* Llamadas y videollamadas (WebRTC).
-   Con STUN solo, funcionan en la mayoría de redes wifi, pero pueden fallar con datos móviles
-   o redes estrictas. Para que funcionen siempre, agregá un servidor TURN (por ejemplo, el plan
-   gratuito de Metered, Twilio o Cloudflare) y descomentá lo siguiente con tus datos:
-
-   window.OG_ICE_SERVERS = [
-     { urls: 'stun:stun.l.google.com:19302' },
-     { urls: 'turn:TU-SERVIDOR-TURN:443?transport=tcp', username: 'USUARIO', credential: 'CLAVE' }
-   ];
-*/
