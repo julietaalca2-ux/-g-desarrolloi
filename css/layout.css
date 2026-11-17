@@ -5,11 +5,20 @@ main {
   max-width: 470px;
   margin: auto;
   min-height: calc(100vh - 120px);
+  min-height: calc(100dvh - 120px);
   background: var(--bg-main);
-  margin-top: calc(54px + env(safe-area-inset-top));
+  margin-top: calc(var(--header-h, 54px) + env(safe-area-inset-top, 0px));
 }
 main > div { display: none !important; padding: 16px; content-visibility: auto; }
-main > div.active { display: block !important; }
+main > div.active { display: block !important; content-visibility: visible; }
+
+/* Evita el rebote de "tirar" de la página en iPhone/Android instalado: el encabezado y la barra no se mueven */
+html { overscroll-behavior-y: none; -webkit-text-size-adjust: 100%; }
+@supports (overflow: clip) { body { overflow-x: clip; } }
+
+/* EXPLORAR: como Instagram, arriba queda SOLO el buscador (sin el encabezado vacío) */
+body[data-tab="explore"] header { display: none; }
+body[data-tab="explore"] main { margin-top: 0; }
 #feed.active, #profile.active, #publicprofile.active, #messagesPage.active,
 #chatRoomPage.active, #chatDetailsPage.active, #chatSubSettingsPage.active,
 #menuSectionPage.active, #menuConfigPage.active, #menuPrivacyPage.active,
