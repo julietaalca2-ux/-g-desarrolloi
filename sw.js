@@ -1,6 +1,6 @@
 /* ÖG — Service Worker (og-mobile-dev) */
 
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 const CACHE_PREFIX = 'og-mobile-dev-';
 const CACHE_NAME = CACHE_PREFIX + VERSION;
 
@@ -26,6 +26,7 @@ const APP_SHELL = [
   'css/feed.css',
   'css/explore.css',
   'css/chat.css',
+  'css/calls.css',
   'css/profile.css',
   'css/settings.css',
   'css/style.css',
@@ -39,6 +40,8 @@ const APP_SHELL = [
   'js/features/activity.js',
   'js/features/auth.js',
   'js/features/chat.js',
+  'js/features/chat-media.js',
+  'js/features/calls.js',
   'js/features/explore.js',
   'js/features/feed.js',
   'js/features/highlights.js',
