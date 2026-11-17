@@ -31,12 +31,38 @@ function closeLoorsSection() {
   const section = document.getElementById('loors-section');
   if (!section) return;
   section.classList.remove('active');
-  document.querySelectorAll('.loor-video').forEach(video => video.pause());
+  document.querySelectorAll('.loor-video, .loor-audio').forEach(media => media.pause());
+}
+
+// Reproduce el video de una tarjeta y, si tiene música elegida, también su audio
+function playLoorCard(card) {
+  const video = card.querySelector('.loor-video');
+  const audio = card.querySelector('.loor-audio');
+
+  video.play().then(() => {
+    card.classList.remove('paused');
+  }).catch(() => {
+    video.muted = true;
+    video.play().catch(() => {});
+  });
+
+  // En iPhone el audio puede quedar bloqueado hasta que la persona toque la pantalla
+  if (audio) audio.play().catch(() => {});
+}
+
+function pauseLoorCard(card) {
+  const video = card.querySelector('.loor-video');
+  const audio = card.querySelector('.loor-audio');
+  video.pause();
+  if (audio) audio.pause();
 }
 
 async function loadLoorsFeed() {
   const container = document.getElementById('loors-feed-container');
   if (!container) return;
+
+  // Detener cualquier video o audio anterior antes de recargar la lista
+  document.querySelectorAll('.loor-video, .loor-audio').forEach(media => media.pause());
 
   container.innerHTML = `<div style="color:#fff;text-align:center;margin-top:45vh;font-size:0.95rem;">Cargando LOORS...</div>`;
 
@@ -77,7 +103,21 @@ async function loadLoorsFeed() {
       : Promise.resolve({ data: [] })
   ]);
 
-  const profilesMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
+  // Perfiles de los creadores: si la consulta falla o viene vacía, se reintenta con todas las columnas
+  // y, como último recurso, se usa la caché de perfiles que ya tiene la app.
+  let profilesData = profilesRes.data || [];
+  if (profilesRes.error || profilesData.length === 0) {
+    console.error('Loors: no se pudieron leer los perfiles, reintentando', profilesRes.error);
+    const retry = await db.from('og_profiles').select('*').in('id', userIds);
+    if (retry.error) console.error('Loors: error en el reintento de perfiles', retry.error);
+    profilesData = retry.data || [];
+  }
+  const profilesMap = new Map(profilesData.map(p => [p.id, p]));
+  userIds.forEach(id => {
+    if (!profilesMap.has(id) && typeof profilesCache !== 'undefined' && profilesCache[id]) {
+      profilesMap.set(id, profilesCache[id]);
+    }
+  });
   const allLikes = likesRes.data || [];
   const allComments = commentsRes.data || [];
   const savedSet = new Set((savesRes.data || []).map(s => s.loor_id));
@@ -107,7 +147,8 @@ async function loadLoorsFeed() {
     card.dataset.loorId = loor.id;
 
     card.innerHTML = `
-      <video class="loor-video" src="${loor.video_url}" playsinline loop preload="metadata"></video>
+      <video class="loor-video" src="${loor.video_url}" playsinline loop preload="metadata" ${loor.audio_url ? 'muted' : ''}></video>
+      ${loor.audio_url ? `<audio class="loor-audio" src="${escapeLoorHtml(loor.audio_url)}" loop preload="none"></audio>` : ''}
       <div class="loor-pause-indicator">❚❚</div>
 
       <div class="loor-overlay-wrapper">
@@ -160,8 +201,15 @@ async function loadLoorsFeed() {
 
           <div class="loor-meta-row">
             <div class="loor-audio-pill">
-              <span>🎵</span>
-              <span>${escapeLoorHtml(loor.audio_name || 'Audio original')}</span>
+              ${loor.audio_link ? `
+                <a class="loor-audio-link" href="${escapeLoorHtml(loor.audio_link)}" target="_blank" rel="noopener noreferrer">
+                  <span>🎵</span>
+                  <span>${escapeLoorHtml(loor.audio_name || 'Audio original')}</span>
+                </a>
+              ` : `
+                <span>🎵</span>
+                <span>${escapeLoorHtml(loor.audio_name || 'Audio original')}</span>
+              `}
             </div>
             <span class="loor-views-text">👁️ <b class="views-number">${loor.views_count || 0}</b> reproducciones</span>
           </div>
@@ -171,12 +219,17 @@ async function loadLoorsFeed() {
 
     // Pausar / reanudar tocando el video
     const videoEl = card.querySelector('.loor-video');
+    const audioEl = card.querySelector('.loor-audio');
     videoEl.addEventListener('click', () => {
+      // Si el video corre pero el audio quedó bloqueado por el iPhone, el primer toque lo activa
+      if (audioEl && !videoEl.paused && audioEl.paused) {
+        audioEl.play().catch(() => {});
+        return;
+      }
       if (videoEl.paused) {
-        videoEl.play();
-        card.classList.remove('paused');
+        playLoorCard(card);
       } else {
-        videoEl.pause();
+        pauseLoorCard(card);
         card.classList.add('paused');
       }
     });
@@ -209,12 +262,7 @@ function setupLoorAutoplayObserver() {
       const loorId = card.dataset.loorId;
 
       if (entry.isIntersecting) {
-        video.play().then(() => {
-          card.classList.remove('paused');
-        }).catch(() => {
-          video.muted = true;
-          video.play();
-        });
+        playLoorCard(card);
 
         if (!viewedLoorsSession.has(loorId)) {
           viewedLoorsSession.add(loorId);
@@ -223,6 +271,11 @@ function setupLoorAutoplayObserver() {
       } else {
         video.pause();
         video.currentTime = 0;
+        const audio = card.querySelector('.loor-audio');
+        if (audio) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
       }
     });
   }, {
@@ -427,17 +480,27 @@ async function handleUploadLoor(e) {
       .map(t => t.replace(/^#/, '').trim())
       .filter(Boolean);
 
-    const { error: dbError } = await db.from('loors').insert({
+    // Audio elegido en la biblioteca (Mis audios o Música libre). Si no hay, se sube como antes.
+    const chosenAudio = typeof getSelectedLoorAudio === 'function' ? getSelectedLoorAudio() : null;
+
+    const newLoor = {
       user_id: currentUser.id,
       video_url: publicUrlData.publicUrl,
       description: desc,
       hashtags: hashtagsArray,
-      audio_name: audioName
-    });
+      audio_name: chosenAudio ? chosenAudio.title : audioName
+    };
+    if (chosenAudio) {
+      newLoor.audio_url = chosenAudio.url;
+      newLoor.audio_link = chosenAudio.link || null;
+    }
+
+    const { error: dbError } = await db.from('loors').insert(newLoor);
 
     if (dbError) throw dbError;
 
     e.target.reset();
+    if (typeof clearSelectedLoorAudio === 'function') clearSelectedLoorAudio();
     document.getElementById('loors-upload-modal').classList.remove('open');
     await loadLoorsFeed();
   } catch (err) {
