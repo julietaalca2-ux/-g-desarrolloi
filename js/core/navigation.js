@@ -252,3 +252,19 @@ function backToMainMenu(currentPageId) {
  document.getElementById(currentPageId).classList.remove('active');
  document.getElementById('menuSectionPage').classList.add('active');
 }
+
+/* Pantallas completas (menú, chat): viven dentro de <main>; al abrirlas se lleva <main> arriba del todo
+   para que queden perfectamente alineadas con la pantalla. */
+(function watchFullscreenViews() {
+ const main = ogScroller();
+ if (!main || !('MutationObserver' in window)) return;
+ const sel = '.fullscreen-menu-view, #chatRoomPage, #chatDetailsPage, #chatSubSettingsPage';
+ new MutationObserver(muts => {
+  for (const m of muts) {
+   if (m.target.parentElement === main && m.target.matches(sel) && m.target.classList.contains('active')) {
+    main.scrollTop = 0;
+    break;
+   }
+  }
+ }).observe(main, { attributes: true, attributeFilter: ['class'], subtree: true });
+})();
