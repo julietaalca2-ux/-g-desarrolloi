@@ -71,7 +71,20 @@ function playLoorCard(card) {
   });
 
   // En iPhone el audio puede quedar bloqueado hasta que la persona toque la pantalla
-  if (audio) audio.play().catch(() => {});
+  if (audio) startLoorAudio(video, audio);
+}
+
+// El video arranca (mudo) sin esperar; el audio entra apenas tenga datos y se alinea con el video
+function startLoorAudio(video, audio) {
+  if (!audio.getAttribute('src') && audio.dataset.src) { audio.preload = 'auto'; audio.src = audio.dataset.src; }
+  const align = () => {
+    const d = audio.duration;
+    if (!d || !isFinite(d) || video.paused) return;
+    const target = video.currentTime % d;
+    if (Math.abs(audio.currentTime - target) > 0.25) { try { audio.currentTime = target; } catch (e) {} }
+  };
+  if (audio.readyState < 3) audio.addEventListener('playing', align, { once: true });
+  audio.play().catch(() => {});
 }
 
 function pauseLoorCard(card) {
