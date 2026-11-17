@@ -4,7 +4,7 @@
 .explore-top-bar {
   padding: 8px 12px 10px;
   position: sticky;
-  top: calc(var(--header-h, 54px) + env(safe-area-inset-top, 0px));
+  top: 0;
   background: var(--bg-main);
   z-index: 40;
   border-bottom: none;

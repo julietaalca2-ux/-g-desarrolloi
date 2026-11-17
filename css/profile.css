@@ -81,7 +81,7 @@
   border-bottom: 1px solid var(--border-light);
   background: var(--bg-main);
   position: sticky;
-  top: calc(var(--header-h, 54px) + env(safe-area-inset-top, 0px));
+  top: 0;
   z-index: 30;
 }
 .profile-tab-btn {

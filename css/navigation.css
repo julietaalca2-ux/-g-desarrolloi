@@ -97,8 +97,3 @@ nav button.active .nav-ic-search { stroke-width: 3; }
 .nav-avatar-ring svg { width: 16px; height: 16px; }
 nav button.active .nav-avatar-ring { border-color: var(--text-primary); border-width: 2px; }
 .nav-avatar-ring img { width: 100%; height: 100%; object-fit: cover; }
-
-/* El contenido nunca queda tapado por la barra */
-body {
-  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 16px);
-}

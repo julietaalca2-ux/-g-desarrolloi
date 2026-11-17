@@ -1,24 +1,45 @@
 /* ------------------------------------------------------------------------- */
-/* Main y Contenedor Central                                                */
+/* Estructura tipo app: el encabezado y la barra inferior NO se mueven.      */
+/* La página (body) ya no se desplaza: solo se desplaza <main>, que queda    */
+/* entre el encabezado y la barra inferior. Así Safari/Chrome no pueden      */
+/* arrastrar el encabezado al hacer scroll ni al estirar la pantalla.        */
 /* ------------------------------------------------------------------------- */
-main {
-  max-width: 470px;
-  margin: auto;
-  min-height: calc(100vh - 120px);
-  min-height: calc(100dvh - 120px);
-  background: var(--bg-main);
-  margin-top: calc(var(--header-h, 54px) + env(safe-area-inset-top, 0px));
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
 }
+body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+}
+
+main {
+  position: absolute;               /* sin z-index: no cambia el orden de capas de chat/menús */
+  top: calc(var(--header-h, 54px) + env(safe-area-inset-top, 0px));
+  bottom: calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  right: 0;
+  max-width: 470px;
+  margin: 0 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  background: var(--bg-main);
+}
+/* Si la barra inferior está oculta (menú, sala de chat), <main> ocupa hasta abajo */
+body:has(#bottomNavBar[style*="display: none"]) main { bottom: 0; }
+
 main > div { display: none !important; padding: 16px; content-visibility: auto; }
 main > div.active { display: block !important; content-visibility: visible; }
 
-/* Evita el rebote de "tirar" de la página en iPhone/Android instalado: el encabezado y la barra no se mueven */
-html { overscroll-behavior-y: none; -webkit-text-size-adjust: 100%; }
-@supports (overflow: clip) { body { overflow-x: clip; } }
-
 /* EXPLORAR: como Instagram, arriba queda SOLO el buscador (sin el encabezado vacío) */
 body[data-tab="explore"] header { display: none; }
-body[data-tab="explore"] main { margin-top: 0; }
+body[data-tab="explore"] main { top: 0; }
+
 #feed.active, #profile.active, #publicprofile.active, #messagesPage.active,
 #chatRoomPage.active, #chatDetailsPage.active, #chatSubSettingsPage.active,
 #menuSectionPage.active, #menuConfigPage.active, #menuPrivacyPage.active,
@@ -26,4 +47,3 @@ body[data-tab="explore"] main { margin-top: 0; }
 #menuHelpPage.active, #menuAccountsPage.active, #explore.active {
   padding: 0 !important;
 }
-
