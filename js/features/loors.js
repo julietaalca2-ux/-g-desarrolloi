@@ -179,7 +179,9 @@ async function loadLoorsFeed() {
     // Abrir perfil del creador usando las funciones globales existentes de ÖG
     card.querySelector('.loor-creator-link').addEventListener('click', () => {
       closeLoorsSection();
-      if (typeof viewUserProfile === 'function') {
+      if (typeof openPublicProfile === 'function') {
+        openPublicProfile(loor.user_id);
+      } else if (typeof viewUserProfile === 'function') {
         viewUserProfile(loor.user_id);
       } else if (typeof openUserProfile === 'function') {
         openUserProfile(loor.user_id);
