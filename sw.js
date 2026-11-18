@@ -1,6 +1,6 @@
 /* ÖG — Service Worker (og-mobile-dev) */
 
-const VERSION = '1.6.0';
+const VERSION = '1.6.2';
 const CACHE_PREFIX = 'og-mobile-dev-';
 const CACHE_NAME = CACHE_PREFIX + VERSION;
 
@@ -37,6 +37,7 @@ const APP_SHELL = [
   'css/loors.css',
   'css/notes.css',
   'css/notifications.css',
+  'css/activity.css',
   'css/verification.css',
   'css/style.css',
   'css/animations.css',
@@ -48,8 +49,10 @@ const APP_SHELL = [
   'js/core/pwa.js',
   'js/core/navigation.js',
   'js/core/realtime.js',
+  'js/core/sounds.js',
   'js/core/stability.js',
   'js/features/activity.js',
+  'js/features/follow-requests.js',
   'js/features/auth.js',
   'js/features/chat.js',
   'js/features/chat-media.js',
