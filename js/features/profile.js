@@ -551,7 +551,7 @@ async function renderUsersInFollowModal(userIds) {
 
   const info = document.createElement('div');
   info.className = 'public-user-info';
-  info.innerHTML = `<strong data-verify-user="${profile.id}">${profile.username || profile.display_name}</strong>`;
+  info.innerHTML = `<strong data-verify-user="${profile.id}">${ogEsc(profile.username || profile.display_name)}</strong>`;
 
   item.append(info);
 

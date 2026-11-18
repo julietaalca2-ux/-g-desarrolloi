@@ -510,7 +510,7 @@ async function executeAdvancedSearch(queryText) {
    item.append(createAvatarNode(profile, false));
    const info = document.createElement('div');
    info.className = 'public-user-info';
-   info.innerHTML = `<strong>${profile.username || profile.display_name}</strong>`;
+   info.innerHTML = `<strong>${ogEsc(profile.username || profile.display_name)}</strong>`;
    item.append(info);
    item.onclick = () => openPublicProfile(profile.id);
    bindSmartPrefetch(item, () => prefetchUserProfile(profile.id));

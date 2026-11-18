@@ -237,7 +237,7 @@ async function searchUsersForChat() {
    item.append(createAvatarNode(profile, false));
    const info = document.createElement('div');
    info.className = 'public-user-info';
-   info.innerHTML = `<strong>${profile.username}</strong>`;
+   info.innerHTML = `<strong>${ogEsc(profile.username)}</strong>`;
    item.append(info);
    item.onclick = () => openDirectChatWithUser(profile.id);
    fragment.append(item);

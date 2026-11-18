@@ -175,7 +175,7 @@ async function openAddToHighlightModal() {
   btn.style.cssText = 'width:100%;text-align:left;display:flex;align-items:center;gap:10px;padding:8px 12px;';
 
   const alreadyAdded = hl.items && hl.items.includes(storyImageUrl);
-  btn.innerHTML = `<span style="font-weight:600;">📁 ${hl.title}</span> <span style="margin-left:auto;font-size:12px;color:${alreadyAdded ? '#22c55e' : '#3b82f6'}">${alreadyAdded ? 'Agregada ✓' : 'Agregar +'}</span>`;
+  btn.innerHTML = `<span style="font-weight:600;">📁 ${ogEsc(hl.title)}</span> <span style="margin-left:auto;font-size:12px;color:${alreadyAdded ? '#22c55e' : '#3b82f6'}">${alreadyAdded ? 'Agregada ✓' : 'Agregar +'}</span>`;
 
   btn.onclick = async () => {
    if (alreadyAdded) {

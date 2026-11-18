@@ -389,7 +389,7 @@ async function loadUserOwnActivity() {
     text.append(span);
    } else if (ev.type === 'followed_user') {
     const p = profilesCache[ev.user_id];
-    text.innerHTML = `👤 Empezaste a seguir a <strong>@${p?.username || 'usuario'}</strong>.`;
+    text.innerHTML = `👤 Empezaste a seguir a <strong>@${ogEsc(p?.username || 'usuario')}</strong>.`;
    }
 
    info.append(text, date);

@@ -583,7 +583,7 @@ async function openPostDetail(post) {
  head.className = 'posthead';
  head.append(createAvatarNode(profile, false));
  const info = document.createElement('div');
- info.innerHTML = `<div class="username" data-verify-user="${post.user_id}">${profile.username || profile.display_name}</div><div class="time">${formatDate(post.created_at)}</div>`;
+ info.innerHTML = `<div class="username" data-verify-user="${post.user_id}">${ogEsc(profile.username || profile.display_name)}</div><div class="time">${formatDate(post.created_at)}</div>`;
  head.append(info);
  article.append(head);
 
