@@ -1,6 +1,6 @@
 /* ÖG — Service Worker (og-mobile-dev) */
 
-const VERSION = '1.6.3';
+const VERSION = '1.6.4';
 const CACHE_PREFIX = 'og-mobile-dev-';
 const CACHE_NAME = CACHE_PREFIX + VERSION;
 
