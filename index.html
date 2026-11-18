@@ -53,6 +53,7 @@
 <link rel="stylesheet" href="css/settings.css">
 <link rel="stylesheet" href="css/camera.css">
 <link rel="stylesheet" href="css/loors.css">
+<link rel="stylesheet" href="css/loors-share.css">
 <link rel="stylesheet" href="css/notes.css">
 <link rel="stylesheet" href="css/notifications.css">
 <link rel="stylesheet" href="css/activity.css">
@@ -126,6 +127,9 @@
 </div>
 <div class="header-center-slot" id="headerLogoSlot" style="display:flex;">
 <div class="logo">ÖG<span>.</span></div>
+</div>
+<div class="header-center-slot" id="headerUsernameSlot" style="display:none;">
+<span class="header-username" id="headerUsername"></span>
 </div>
 <div class="header-right-slot" id="header-default-icons">
 <button class="icon" onclick="openCameraModal()" aria-label="Cámara">
@@ -1066,6 +1070,23 @@ Subir
 </div>
 <div id="loors-feed-container" class="loors-feed-container"></div>
 </section>
+<!-- Loors: compartir por mensaje -->
+<div id="loor-share-backdrop" class="loor-share-backdrop" onclick="if(event.target===this)closeLoorShareSheet()">
+<div class="loor-share-sheet" role="dialog" aria-label="Enviar Loor">
+<div class="loor-share-handle"></div>
+<div class="loor-share-head">
+<strong>Enviar Loor</strong>
+<button type="button" class="loor-share-more" onclick="shareLoorExternally()">Más opciones</button>
+</div>
+<input id="loor-share-search" class="loor-share-search" type="search" placeholder="Buscar usuario…" autocomplete="off" oninput="onLoorShareSearch()">
+<div id="loor-share-list" class="loor-share-list"></div>
+<div class="loor-share-compose">
+<input id="loor-share-text" class="loor-share-text" type="text" maxlength="500" placeholder="Escribí un mensaje…" autocomplete="off">
+<button id="loor-share-send" type="button" class="loor-share-send" onclick="submitLoorShare()" disabled>Enviar</button>
+</div>
+<p id="loor-share-status" class="loor-share-status"></p>
+</div>
+</div>
 <!-- Loors: comentarios -->
 <div id="loors-comments-modal" class="loor-modal-backdrop" onclick="if(event.target===this)this.classList.remove('open')">
 <div class="loor-sheet">
@@ -1292,6 +1313,7 @@ Subir
 <script src="js/features/calls.js"></script>
 <script src="js/features/loors-engine.js"></script>
 <script src="js/features/loors.js"></script>
+<script src="js/features/loors-share.js"></script>
 <script src="js/features/audio-library.js"></script>
 <script src="js/features/notes.js"></script>
 <script src="js/features/notifications.js"></script>

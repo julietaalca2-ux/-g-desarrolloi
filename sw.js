@@ -1,6 +1,6 @@
 /* ÖG — Service Worker (og-mobile-dev) */
 
-const VERSION = '1.6.4';
+const VERSION = '1.6.5';
 const CACHE_PREFIX = 'og-mobile-dev-';
 const CACHE_NAME = CACHE_PREFIX + VERSION;
 
@@ -35,6 +35,7 @@ const APP_SHELL = [
   'css/profile.css',
   'css/settings.css',
   'css/loors.css',
+  'css/loors-share.css',
   'css/notes.css',
   'css/notifications.css',
   'css/activity.css',
@@ -66,6 +67,7 @@ const APP_SHELL = [
   'js/features/stories.js',
   'js/features/loors-engine.js',
   'js/features/loors.js',
+  'js/features/loors-share.js',
   'js/features/notes.js',
   'js/features/notifications.js',
   'js/features/audio-library.js',
