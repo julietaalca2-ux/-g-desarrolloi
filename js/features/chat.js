@@ -37,6 +37,7 @@ function chatContentPreview(content) {
  if (p.t === 'image') return '📷 Foto';
  if (p.t === 'video') return '🎥 Video';
  if (p.t === 'audio') return '🎤 Mensaje de voz';
+ if (p.t === 'loor') return p.x ? '🎬 ' + p.x : '🎬 Loor';
  if (p.t === 'file') return '📎 ' + (p.n || 'Archivo');
  if (p.t === 'call') return p.v ? '📹 Videollamada' : '📞 Llamada';
  return 'Mensaje';

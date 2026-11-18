@@ -333,7 +333,7 @@ async function renderLoorsBatch(loors, container) {
             <span class="loor-action-count">${isSaved ? 'Guardado' : 'Guardar'}</span>
           </button>
 
-          <button class="loor-action-btn btn-share" data-id="${loor.id}" data-desc="${escapeLoorHtml(loor.description)}" aria-label="Compartir">
+          <button class="loor-action-btn btn-share" data-id="${loor.id}" data-desc="${escapeLoorHtml(loor.description)}" data-thumb="${escapeLoorHtml(loor.thumbnail_url || '')}" data-video="${escapeLoorHtml(loor.video_url || '')}" data-username="${escapeLoorHtml(creator.username)}" aria-label="Compartir">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
               <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
@@ -489,21 +489,17 @@ function bindLoorsUIEvents() {
       return;
     }
 
-    // COMPARTIR
+    // COMPARTIR: hoja para enviar el Loor por mensaje (con texto opcional)
     const shareBtn = e.target.closest('.btn-share');
     if (shareBtn) {
-      const shareData = {
-        title: 'Mirá este Loor en ÖG',
-        text: shareBtn.dataset.desc || 'Video en ÖG LOORS',
-        url: window.location.origin + '?loor=' + shareBtn.dataset.id
-      };
-      if (navigator.share) {
-        try { await navigator.share(shareData); } catch (_) {}
-      } else {
-        await navigator.clipboard.writeText(shareData.url);
-        if (typeof showToast === 'function') showToast('Enlace copiado');
-        else alert('Enlace del Loor copiado al portapapeles');
-      }
+      if (!requireLoorAuth()) return;
+      openLoorShareSheet({
+        id: shareBtn.dataset.id,
+        desc: shareBtn.dataset.desc || '',
+        thumb: shareBtn.dataset.thumb || '',
+        video: shareBtn.dataset.video || '',
+        username: shareBtn.dataset.username || ''
+      });
       return;
     }
 

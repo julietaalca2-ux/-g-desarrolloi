@@ -29,7 +29,11 @@ function updateProfileUI() {
 
  document.getElementById('profile-actions').style.display = 'flex';
  document.getElementById('myname').textContent = myProfile?.display_name || myProfile?.username || 'Mi perfil';
- markVerifyUser(document.getElementById('myname'), myProfile?.id || currentUser?.id);
+ const headerUsernameEl = document.getElementById('headerUsername');
+ if (headerUsernameEl) {
+  headerUsernameEl.textContent = myProfile?.username || '';
+  markVerifyUser(headerUsernameEl, myProfile?.id || currentUser?.id);
+ }
  document.getElementById('mypronouns').textContent = myProfile?.pronouns ? `· ${myProfile.pronouns}` : '';
  document.getElementById('myusername').textContent = '@' + (myProfile?.username || '');
  document.getElementById('mybio').textContent = myProfile?.bio || '';
@@ -330,9 +334,10 @@ function shareProfileLink() {
 function renderPublicProfileHeader(profile) {
  viewedProfile = profile;
  document.getElementById('publicname').textContent = profile.display_name || profile.username;
- markVerifyUser(document.getElementById('publicname'), profile.id);
- document.getElementById('publicpronouns').textContent = profile.pronouns ? `· ${profile.pronouns}` : '';
- document.getElementById('publicheadername').textContent = profile.username;
+  document.getElementById('publicpronouns').textContent = profile.pronouns ? `· ${profile.pronouns}` : '';
+ const pubHeaderEl = document.getElementById('publicheadername');
+ pubHeaderEl.textContent = profile.username;
+ markVerifyUser(pubHeaderEl, profile.id);
  document.getElementById('publicusername').textContent = '@' + profile.username;
  document.getElementById('publicbio').textContent = profile.bio || '';
 
