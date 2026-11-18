@@ -356,7 +356,8 @@ async function openChatRoom(conversationId, recipientProfile) {
  if (onlineUsersMap[recipientProfile.id]) dot.classList.add('active');
  headerAvatar.append(dot);
 
- document.getElementById('chatRoomStatusSub').textContent = onlineUsersMap[recipientProfile.id] ? 'En línea' : 'Desconectado';
+ document.getElementById('chatRoomStatusSub').textContent = onlineUsersMap[recipientProfile.id] ? 'En línea' : ogFormatLastSeen(ogLastSeenCache[recipientProfile.id]);
+ if (!onlineUsersMap[recipientProfile.id]) ogRefreshChatStatus();
 
  const container = document.getElementById('chatMessagesContainer');
  const cachedMsgs = prefetchedMessagesByConv[conversationId] || ogCache.get(`chat_msgs_${conversationId}`, 1000 * 60 * 60 * 12);
@@ -753,7 +754,7 @@ function openChatDetailsPage() {
 
  const isOnline = onlineUsersMap[activeRecipientProfile.id];
  const statusEl = document.getElementById('chatDetailsActivityStatus');
- statusEl.textContent = isOnline ? 'En línea' : 'Desconectado';
+ statusEl.textContent = isOnline ? 'En línea' : ogFormatLastSeen(ogLastSeenCache[activeRecipientProfile.id]);
  statusEl.style.color = isOnline ? '#22c55e' : '#888888';
 }
 
