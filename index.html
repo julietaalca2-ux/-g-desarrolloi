@@ -54,6 +54,7 @@
 <link rel="stylesheet" href="css/camera.css">
 <link rel="stylesheet" href="css/loors.css">
 <link rel="stylesheet" href="css/notes.css">
+<link rel="stylesheet" href="css/notifications.css">
 <link rel="stylesheet" href="css/verification.css">
 <link rel="stylesheet" href="css/style.css">
 <!-- ANIMACIONES Y MODO LIVIANO (capa aditiva) -->
@@ -222,6 +223,13 @@ Tu historia
 <input type="file" id="postImageFileInput" class="hidden-file" accept="image/jpeg,image/png,image/webp" onchange="handlePostImageSelect(this)">
 <label class="muted" style="font-size:12px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;">Reflexión / Título</label>
 <textarea id="newpost" placeholder="Describe la luz, materialidad o contexto de este espacio..."></textarea>
+<div class="post-music-chooser">
+<button type="button" id="post-audio-choose-btn" class="loor-audio-choose-btn" onclick="choosePostAudio()">🎵 Añadir música</button>
+<div id="post-audio-selected" class="loor-audio-selected">
+<span id="post-audio-selected-name"></span>
+<button type="button" aria-label="Quitar música" onclick="clearPostAudio()">✕</button>
+</div>
+</div>
 <button class="primary" id="publishBtn" style="margin-top:16px" onclick="publish()">Publicar en el archivo</button>
 <p id="publishStatus" class="status"></p>
 </div>
@@ -691,14 +699,54 @@ Tu historia
 <strong style="font-size:16px;color:var(--text-primary);">Notificaciones</strong>
 </div>
 <div class="menu-section-content">
+<div class="settings-group">
+<h4 class="settings-group-title">En tu teléfono</h4>
+<div class="settings-row">
+<div class="settings-row-info">
+<p class="settings-row-title">Notificaciones del teléfono</p>
+<p id="notifPushStatus" class="og-notif-status"></p>
+</div>
+<label class="toggle-switch">
+<input type="checkbox" id="notifPushToggle" onchange="ogToggleSystemNotifications(this)">
+<span class="toggle-slider"></span>
+</label>
+</div>
+</div>
 <div class="settings-group" style="border-bottom:none">
 <h4 class="settings-group-title">Alertas en tiempo real</h4>
+<div class="settings-row">
+<div class="settings-row-info">
+<p class="settings-row-title">Mensajes directos</p>
+</div>
+<label class="toggle-switch">
+<input type="checkbox" id="notifDmToggle" checked onchange="saveMenuPreferences()">
+<span class="toggle-slider"></span>
+</label>
+</div>
 <div class="settings-row">
 <div class="settings-row-info">
 <p class="settings-row-title">Apreciaciones en publicaciones</p>
 </div>
 <label class="toggle-switch">
 <input type="checkbox" id="notifLikesToggle" checked onchange="saveMenuPreferences()">
+<span class="toggle-slider"></span>
+</label>
+</div>
+<div class="settings-row">
+<div class="settings-row-info">
+<p class="settings-row-title">Comentarios</p>
+</div>
+<label class="toggle-switch">
+<input type="checkbox" id="notifCommentsToggle" checked onchange="saveMenuPreferences()">
+<span class="toggle-slider"></span>
+</label>
+</div>
+<div class="settings-row">
+<div class="settings-row-info">
+<p class="settings-row-title">Nuevos seguidores</p>
+</div>
+<label class="toggle-switch">
+<input type="checkbox" id="notifFollowsToggle" checked onchange="saveMenuPreferences()">
 <span class="toggle-slider"></span>
 </label>
 </div>
@@ -1045,7 +1093,7 @@ Subir
 <div id="audio-picker-modal" class="loor-modal-backdrop audio-picker-backdrop" onclick="if(event.target===this)closeAudioPicker()">
 <div class="loor-sheet audio-picker-sheet">
 <div class="loor-sheet-header">
-<span>Elegir audio</span>
+<span id="audio-picker-title">Elegir audio</span>
 <button type="button" class="loor-close-modal" aria-label="Cerrar" onclick="closeAudioPicker()">✕</button>
 </div>
 <div class="audio-tabs">
@@ -1219,6 +1267,7 @@ Subir
 <script src="js/features/loors.js"></script>
 <script src="js/features/audio-library.js"></script>
 <script src="js/features/notes.js"></script>
+<script src="js/features/notifications.js"></script>
 <script src="js/features/verification-admin.js"></script>
 <script src="js/core/stability.js"></script>
 <script src="js/app.js"></script>
