@@ -83,6 +83,26 @@ function setupRealtimeNotifications() {
     if (typeof ogNotifyFromRealtime === 'function') ogNotifyFromRealtime('follow', payload.new);
    }
   })
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'follow_requests' }, payload => {
+   if (payload.new?.target_id === currentUser?.id) {
+    if (typeof ogFetchPendingRequests === 'function') {
+     ogFetchPendingRequests().then(() => {
+      if (typeof ogUpdateRequestsRow === 'function') ogUpdateRequestsRow();
+      if (document.getElementById('followRequestsView')?.classList.contains('active')) ogRenderFollowRequests();
+     });
+    }
+    if (typeof ogNotifyFollowRequest === 'function') ogNotifyFollowRequest(payload.new);
+   }
+  })
+  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'follow_requests' }, payload => {
+   if (payload.new?.requester_id === currentUser?.id && payload.new?.status === 'accepted') {
+    cachedFollowingIds = null;
+    ogCache.remove('following_ids');
+    cachedFeedPosts = null;
+    ogCache.remove('feed_posts');
+    if (typeof ogNotifyRequestAccepted === 'function') ogNotifyRequestAccepted(payload.new);
+   }
+  })
   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'likes' }, payload => {
    if (payload.new?.user_id !== currentUser?.id) {
     invalidateActivityCacheAndRefreshIfVisible();
