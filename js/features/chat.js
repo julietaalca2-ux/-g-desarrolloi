@@ -192,7 +192,7 @@ function renderConversationsDOM(conversationsList, container) {
   const nameRow = document.createElement('div');
   nameRow.className = 'dm-conv-name';
   const nameSpan = document.createElement('span');
-  nameSpan.textContent = item.profile.display_name || item.profile.username;
+  nameSpan.textContent = item.profile.username || item.profile.display_name;
   const timeSpan = document.createElement('span');
   timeSpan.className = 'dm-conv-time';
   timeSpan.textContent = item.time;
@@ -237,7 +237,7 @@ async function searchUsersForChat() {
    item.append(createAvatarNode(profile, false));
    const info = document.createElement('div');
    info.className = 'public-user-info';
-   info.innerHTML = `<strong>${profile.display_name || profile.username}</strong><small>@${profile.username}</small>`;
+   info.innerHTML = `<strong>${profile.username}</strong>`;
    item.append(info);
    item.onclick = () => openDirectChatWithUser(profile.id);
    fragment.append(item);
@@ -339,7 +339,7 @@ async function openChatRoom(conversationId, recipientProfile) {
  const bottomNavBar = document.getElementById('bottomNavBar');
  if (bottomNavBar) bottomNavBar.style.display = 'none';
 
- document.getElementById('chatRoomTitle').textContent = recipientProfile.display_name || recipientProfile.username;
+ document.getElementById('chatRoomTitle').textContent = recipientProfile.username || recipientProfile.display_name;
 
  const headerAvatar = document.getElementById('chatRoomHeaderAvatar');
  headerAvatar.replaceChildren();
@@ -750,7 +750,7 @@ function openChatDetailsPage() {
 
  const av = document.getElementById('chatDetailsAvatarContainer');
  setAvatarContent(av, activeRecipientProfile.avatar_url, '👤');
- document.getElementById('chatDetailsName').textContent = activeRecipientProfile.display_name || activeRecipientProfile.username;
+ document.getElementById('chatDetailsName').textContent = activeRecipientProfile.username || activeRecipientProfile.display_name;
  document.getElementById('chatDetailsUsername').textContent = '@' + activeRecipientProfile.username;
 
  const isOnline = onlineUsersMap[activeRecipientProfile.id];

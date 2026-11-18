@@ -186,7 +186,7 @@ function renderCommentsListToContainer(comments, container) {
   div.className = 'comment-item';
   const userSpan = document.createElement('span');
   userSpan.className = 'comment-user';
-  userSpan.textContent = profile.display_name || profile.username;
+  userSpan.textContent = profile.username || profile.display_name;
   userSpan.setAttribute('data-verify-user', c.user_id);
   const textSpan = document.createElement('span');
   textSpan.className = 'comment-text';
@@ -221,7 +221,7 @@ function buildPostDOMElement(post, preloadedMeta = null) {
 
  const name = document.createElement('div');
  name.className = 'username';
- name.textContent = profile.display_name || profile.username || 'Usuario';
+ name.textContent = profile.username || profile.display_name || 'Usuario';
  name.setAttribute('data-verify-user', post.user_id);
 
  const time = document.createElement('div');
@@ -583,7 +583,7 @@ async function openPostDetail(post) {
  head.className = 'posthead';
  head.append(createAvatarNode(profile, false));
  const info = document.createElement('div');
- info.innerHTML = `<div class="username" data-verify-user="${post.user_id}">${profile.display_name || profile.username}</div><div class="time">${formatDate(post.created_at)}</div>`;
+ info.innerHTML = `<div class="username" data-verify-user="${post.user_id}">${profile.username || profile.display_name}</div><div class="time">${formatDate(post.created_at)}</div>`;
  head.append(info);
  article.append(head);
 

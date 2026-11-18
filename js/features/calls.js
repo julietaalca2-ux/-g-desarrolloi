@@ -114,7 +114,7 @@ function showCallOverlay() {
  const c = call;
  if (!c) return;
  const overlay = document.getElementById('callOverlay');
- document.getElementById('callPeerName').textContent = c.peerProfile?.display_name || c.peerProfile?.username || 'Llamada';
+ document.getElementById('callPeerName').textContent = c.peerProfile?.username || c.peerProfile?.display_name || 'Llamada';
  setAvatarContent(document.getElementById('callPeerAvatar'), c.peerProfile?.avatar_url, '👤');
  overlay.classList.toggle('audio-only', !c.video);
  overlay.classList.remove('connected');
@@ -296,7 +296,7 @@ async function handleCallSignal(msg) {
   if (typeof ogNotify === 'function') {
    ogNotify({
     type: 'call',
-    title: profile?.display_name || profile?.username || 'Alguien',
+    title: profile?.username || profile?.display_name || 'Alguien',
     body: msg.video ? 'Videollamada entrante…' : 'Llamada entrante…',
     icon: profile?.avatar_url || undefined,
     tag: 'incoming-call',
@@ -358,7 +358,7 @@ function showIncomingCall() {
  const c = call;
  if (!c) return;
  setAvatarContent(document.getElementById('incomingCallAvatar'), c.peerProfile?.avatar_url, '👤');
- document.getElementById('incomingCallName').textContent = c.peerProfile?.display_name || c.peerProfile?.username || 'Alguien';
+ document.getElementById('incomingCallName').textContent = c.peerProfile?.username || c.peerProfile?.display_name || 'Alguien';
  document.getElementById('incomingCallKind').textContent = c.video ? 'Videollamada entrante…' : 'Llamada entrante…';
  document.getElementById('incomingCallOverlay').classList.add('active');
  startRingtone();

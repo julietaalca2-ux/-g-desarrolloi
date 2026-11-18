@@ -79,7 +79,7 @@ function renderLoorShareRows(profiles) {
     const info = document.createElement('div');
     info.className = 'loor-share-info';
     const name = document.createElement('strong');
-    name.textContent = profile.display_name || profile.username;
+    name.textContent = profile.username || profile.display_name;
     const user = document.createElement('small');
     user.textContent = '@' + profile.username;
     info.append(name, user);

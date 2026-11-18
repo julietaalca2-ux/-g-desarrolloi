@@ -35,8 +35,7 @@ function updateProfileUI() {
   markVerifyUser(headerUsernameEl, myProfile?.id || currentUser?.id);
  }
  document.getElementById('mypronouns').textContent = myProfile?.pronouns ? `· ${myProfile.pronouns}` : '';
- document.getElementById('myusername').textContent = '@' + (myProfile?.username || '');
- document.getElementById('mybio').textContent = myProfile?.bio || '';
+  document.getElementById('mybio').textContent = myProfile?.bio || '';
 
  const websiteContainer = document.getElementById('myWebsiteContainer');
 
@@ -333,13 +332,12 @@ function shareProfileLink() {
 
 function renderPublicProfileHeader(profile) {
  viewedProfile = profile;
- document.getElementById('publicname').textContent = profile.display_name || profile.username;
+ document.getElementById('publicname').textContent = profile.username || profile.display_name;
   document.getElementById('publicpronouns').textContent = profile.pronouns ? `· ${profile.pronouns}` : '';
  const pubHeaderEl = document.getElementById('publicheadername');
  pubHeaderEl.textContent = profile.username;
  markVerifyUser(pubHeaderEl, profile.id);
- document.getElementById('publicusername').textContent = '@' + profile.username;
- document.getElementById('publicbio').textContent = profile.bio || '';
+  document.getElementById('publicbio').textContent = profile.bio || '';
 
  const websiteContainer = document.getElementById('publicWebsiteContainer');
 
@@ -553,7 +551,7 @@ async function renderUsersInFollowModal(userIds) {
 
   const info = document.createElement('div');
   info.className = 'public-user-info';
-  info.innerHTML = `<strong data-verify-user="${profile.id}">${profile.display_name || profile.username}</strong><small>@${profile.username}</small>`;
+  info.innerHTML = `<strong data-verify-user="${profile.id}">${profile.username || profile.display_name}</strong>`;
 
   item.append(info);
 

@@ -239,7 +239,7 @@ async function ogGetProfile(userId) {
 }
 
 function ogDisplayName(p) {
-  return (p && (p.display_name || p.username)) || 'Alguien';
+  return (p && (p.username || p.display_name)) || 'Alguien';
 }
 
 /* ---------- Eventos que llegan desde realtime.js ---------- */
