@@ -18,6 +18,7 @@ function invalidateActivityCacheAndRefreshIfVisible() {
 }
 
 function setupPresenceChannel() {
+ if (typeof ogStartLastSeenHeartbeat === 'function') ogStartLastSeenHeartbeat();
  if (presenceChannel) {
   db.removeChannel(presenceChannel);
   presenceChannel = null;
@@ -35,6 +36,9 @@ function setupPresenceChannel() {
  });
 
  presenceChannel
+  .on('presence', { event: 'leave' }, ({ key }) => {
+   if (typeof ogMarkUserLeft === 'function') ogMarkUserLeft(key);
+  })
   .on('presence', { event: 'sync' }, () => {
    const state = presenceChannel.presenceState();
    onlineUsersMap = {};
@@ -46,19 +50,7 @@ function setupPresenceChannel() {
     if (d) d.classList.add('active');
    });
 
-   if (activeRecipientProfile && onlineUsersMap[activeRecipientProfile.id]) {
-    document.getElementById('chatRoomOnlineDot')?.classList.add('active');
-    const sub = document.getElementById('chatRoomStatusSub');
-    if (sub) sub.textContent = 'En línea';
-    const detStatus = document.getElementById('chatDetailsActivityStatus');
-    if (detStatus) { detStatus.textContent = 'En línea'; detStatus.style.color = '#22c55e'; }
-   } else if (activeRecipientProfile) {
-    document.getElementById('chatRoomOnlineDot')?.classList.remove('active');
-    const sub = document.getElementById('chatRoomStatusSub');
-    if (sub) sub.textContent = 'Desconectado';
-    const detStatus = document.getElementById('chatDetailsActivityStatus');
-    if (detStatus) { detStatus.textContent = 'Desconectado'; detStatus.style.color = '#888888'; }
-   }
+   if (activeRecipientProfile && typeof ogRefreshChatStatus === 'function') ogRefreshChatStatus();
   })
   .subscribe(async status => {
    if (status === 'SUBSCRIBED') {
