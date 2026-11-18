@@ -293,6 +293,16 @@ async function handleCallSignal(msg) {
    video: !!msg.video, convId: msg.convId || null, state: 'incoming'
   });
   showIncomingCall();
+  if (typeof ogNotify === 'function') {
+   ogNotify({
+    type: 'call',
+    title: profile?.display_name || profile?.username || 'Alguien',
+    body: msg.video ? 'Videollamada entrante…' : 'Llamada entrante…',
+    icon: profile?.avatar_url || undefined,
+    tag: 'incoming-call',
+    data: { sender_id: msg.from }
+   });
+  }
   // Si quien llama se rinde o no contestamos, el aviso se cierra solo
   call.ringTimeout = setTimeout(() => { if (call && call.state === 'incoming') finishCall('missed-local'); }, CALL_RING_TIMEOUT_MS + 5000);
   return;

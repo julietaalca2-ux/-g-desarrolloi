@@ -74,6 +74,7 @@ function saveMenuPreferences() {
  });
  localStorage.setItem('og_user_settings_' + (currentUser?.id || 'guest'), JSON.stringify(prefs));
  setupPresenceChannel();
+ if (typeof ogSyncPushPrefs === 'function') ogSyncPushPrefs();
 }
 
 function loadMenuPreferences() {
