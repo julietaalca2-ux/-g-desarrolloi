@@ -1,6 +1,6 @@
 /* ÖG — Service Worker (og-mobile-dev) */
 
-const VERSION = '1.6.2';
+const VERSION = '1.6.3';
 const CACHE_PREFIX = 'og-mobile-dev-';
 const CACHE_NAME = CACHE_PREFIX + VERSION;
 
@@ -50,6 +50,7 @@ const APP_SHELL = [
   'js/core/navigation.js',
   'js/core/realtime.js',
   'js/core/sounds.js',
+  'js/core/last-seen.js',
   'js/core/stability.js',
   'js/features/activity.js',
   'js/features/follow-requests.js',
