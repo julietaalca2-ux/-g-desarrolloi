@@ -11,6 +11,11 @@ const PROFILE_MINI_FIELDS = 'id, username, display_name, avatar_url';
 const POST_SELECT_FIELDS = 'id, user_id, content, image_url, views, created_at, audio_url, audio_title, audio_link';
 const MAX_PROFILES_IN_CACHE = 250;
 
+/* Escapa texto de usuario antes de ponerlo en innerHTML (anti-XSS) */
+function ogEsc(v) {
+ return String(v == null ? '' : v).replace(/[&<>"'`]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c]));
+}
+
 function sanitizeProfileForCache(profile) {
  if (!profile || !profile.id) return null;
  return {
