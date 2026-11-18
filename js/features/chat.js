@@ -694,6 +694,7 @@ async function deliverChatMessage(payload, node, tempId) {
 
  renderedMessageIds.delete(tempId);
  renderedMessageIds.add(inserted.id);
+ ogPlaySound('send');
  if (node) {
   node.classList.remove('is-sending', 'is-error');
   node.dataset.msgId = inserted.id;

@@ -184,6 +184,7 @@ async function ogNotify(opts) {
   const data = Object.assign({ type: opts.type }, opts.data || {});
 
   if (visible) {
+    ogPlaySound('notif');
     ogShowBanner({
       title: opts.title, body: opts.body, icon: opts.icon, tag: opts.tag,
       onClick: () => ogHandleNotificationTarget(data)
@@ -204,6 +205,11 @@ async function ogNotify(opts) {
 async function ogHandleNotificationTarget(data) {
   if (!data || !currentUser) return;
   try {
+    if (data.request) {
+      showTab('notifications');
+      if (typeof ogOpenFollowRequests === 'function') ogOpenFollowRequests();
+      return;
+    }
     if (data.type === 'message' && data.conversation_id) {
       const profile = await ogGetProfile(data.sender_id);
       if (profile && typeof openChatRoom === 'function') {
@@ -242,7 +248,7 @@ async function ogNotifyIncomingMessage(msg) {
   if (!msg || msg.sender_id === currentUser?.id) return;
   // Si ya estás mirando esa conversación no hace falta avisar
   const looking = document.visibilityState === 'visible' && document.hasFocus() && activeConversationId === msg.conversation_id;
-  if (looking) return;
+  if (looking) { ogPlaySound('receive'); return; }
 
   const p = await ogGetProfile(msg.sender_id);
   const preview = typeof chatContentPreview === 'function' ? chatContentPreview(msg.content) : 'Mensaje nuevo';
@@ -262,6 +268,7 @@ async function ogNotifyFromRealtime(kind, row) {
   try {
     if (kind === 'follow') {
       if (row.following_id !== currentUser.id) return;
+      if (typeof ogShouldSuppressFollowNotif === 'function' && ogShouldSuppressFollowNotif(row.follower_id)) return;
       const p = await ogGetProfile(row.follower_id);
       ogNotify({
         type: 'follow', title: ogDisplayName(p), body: 'empezó a seguirte',
@@ -289,6 +296,28 @@ async function ogNotifyFromRealtime(kind, row) {
       });
     }
   } catch (e) { console.warn('Error preparando la notificación:', e); }
+}
+
+// Alguien pidió seguirme (cuenta privada)
+async function ogNotifyFollowRequest(row) {
+  if (!row || !currentUser || row.target_id !== currentUser.id || row.status !== 'pending') return;
+  const p = await ogGetProfile(row.requester_id);
+  ogNotify({
+    type: 'follow', title: ogDisplayName(p), body: 'solicitó seguirte',
+    icon: p?.avatar_url || undefined, tag: 'followreq-' + row.requester_id,
+    data: { user_id: row.requester_id, request: true }
+  });
+}
+
+// Una cuenta privada aceptó mi solicitud
+async function ogNotifyRequestAccepted(row) {
+  if (!row || !currentUser || row.requester_id !== currentUser.id || row.status !== 'accepted') return;
+  const p = await ogGetProfile(row.target_id);
+  ogNotify({
+    type: 'follow', title: ogDisplayName(p), body: 'aceptó tu solicitud de seguimiento',
+    icon: p?.avatar_url || undefined, tag: 'followacc-' + row.target_id,
+    data: { user_id: row.target_id }
+  });
 }
 
 /* ---------- Permisos y suscripción push ---------- */

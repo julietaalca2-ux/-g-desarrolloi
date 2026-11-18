@@ -392,6 +392,7 @@ async function openPublicProfile(userId) {
   loadPublicCounts(userId),
   loadHighlights(userId, 'publicHighlightsScrollContainer')
  ]);
+ await ogApplyPrivateGate(userId);
 }
 
 async function loadPublicCounts(userId) {
@@ -416,10 +417,11 @@ async function checkFollowStatus(userId) {
   .maybeSingle();
 
  isFollowing = !!data;
+ ogFollowRequested = isFollowing ? false : await ogHasPendingRequest(userId);
 
  const btn = document.getElementById('publicfollow');
- btn.textContent = isFollowing ? 'Siguiendo' : 'Seguir';
- btn.classList.toggle('primary-action', !isFollowing);
+ btn.textContent = isFollowing ? 'Siguiendo' : (ogFollowRequested ? 'Solicitado' : 'Seguir');
+ btn.classList.toggle('primary-action', !isFollowing && !ogFollowRequested);
 }
 
 async function toggleFollow() {
@@ -427,25 +429,31 @@ async function toggleFollow() {
 
  const btn = document.getElementById('publicfollow');
 
- if (isFollowing) {
-  await db.from('follows').delete()
-   .eq('follower_id', currentUser.id)
-   .eq('following_id', viewedProfile.id);
+ if (isFollowing || ogFollowRequested) {
+  // Dejar de seguir, o cancelar una solicitud pendiente
+  if (isFollowing) {
+   await db.from('follows').delete()
+    .eq('follower_id', currentUser.id)
+    .eq('following_id', viewedProfile.id);
+  }
+  await ogCancelFollowRequest(viewedProfile.id);
 
   isFollowing = false;
+  ogFollowRequested = false;
   btn.textContent = 'Seguir';
   btn.classList.add('primary-action');
 
  } else {
-  await db.from('follows').insert({
-   follower_id: currentUser.id,
-   following_id: viewedProfile.id
-  });
+  // En cuentas privadas esto crea una solicitud en vez de seguir directo
+  const result = await ogRequestFollow(viewedProfile.id);
+  if (result === 'error') return;
 
-  isFollowing = true;
-  btn.textContent = 'Siguiendo';
+  isFollowing = result === 'following';
+  ogFollowRequested = result === 'requested';
+  btn.textContent = isFollowing ? 'Siguiendo' : 'Solicitado';
   btn.classList.remove('primary-action');
  }
+ ogApplyPrivateGate(viewedProfile.id);
 
  cachedFollowingIds = null;
  ogCache.remove('following_ids');

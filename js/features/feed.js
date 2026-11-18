@@ -429,6 +429,7 @@ async function publish() {
  removePostImage();
  clearPostAudio();
  status('publishStatus', '¡Publicado con éxito!');
+ ogPlaySound('publish');
  setTimeout(() => status('publishStatus', ''), 2000);
  cachedFeedPosts = null;
  ogCache.remove('feed_posts');

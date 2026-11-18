@@ -507,7 +507,9 @@ function bindLoorsUIEvents() {
       } else {
         followBtn.classList.add('following');
         followBtn.textContent = 'Siguiendo';
-        await db.from('follows').insert({ follower_id: currentUser.id, following_id: creatorId });
+        const res = await ogRequestFollow(creatorId);
+        if (res === 'requested') { followBtn.classList.remove('following'); followBtn.textContent = 'Solicitado'; }
+        else if (res === 'error') { followBtn.classList.remove('following'); followBtn.textContent = 'Seguir'; }
       }
     }
   });
