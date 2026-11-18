@@ -80,16 +80,19 @@ function setupRealtimeNotifications() {
    if (payload.new.following_id === currentUser?.id) {
     invalidateActivityCacheAndRefreshIfVisible();
     loadStoriesData();
+    if (typeof ogNotifyFromRealtime === 'function') ogNotifyFromRealtime('follow', payload.new);
    }
   })
   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'likes' }, payload => {
    if (payload.new?.user_id !== currentUser?.id) {
     invalidateActivityCacheAndRefreshIfVisible();
+    if (typeof ogNotifyFromRealtime === 'function') ogNotifyFromRealtime('like', payload.new);
    }
   })
   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, payload => {
    if (payload.new?.user_id !== currentUser?.id) {
     invalidateActivityCacheAndRefreshIfVisible();
+    if (typeof ogNotifyFromRealtime === 'function') ogNotifyFromRealtime('comment', payload.new);
    }
   })
   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stories' }, () => {
@@ -136,6 +139,7 @@ function setupRealtimeNotifications() {
    if (!newMsg || newMsg.sender_id === currentUser?.id) return;
 
    document.getElementById('navUnreadDot')?.classList.add('active');
+   if (typeof ogNotifyIncomingMessage === 'function') ogNotifyIncomingMessage(newMsg);
    cachedConversationsList = null;
    ogCache.remove('conversations');
    prefetchedConversationIds.delete(newMsg.conversation_id);
