@@ -1,0 +1,7 @@
+# ÖG — configuración mínima de Supabase para desplegar las Edge Functions.
+# verify_jwt = false: la función bunny-upload verifica ella misma el token del usuario
+# (llama a /auth/v1/user), así funciona igual con las claves "sb_publishable_..." nuevas.
+# NO significa que sea pública: sin sesión válida responde 401.
+
+[functions.bunny-upload]
+verify_jwt = false
