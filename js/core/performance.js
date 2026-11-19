@@ -29,13 +29,19 @@ const OG_PERF = {
   try { localStorage.setItem(MISS_KEY, JSON.stringify([...misses].slice(-600))); } catch (e) {}
  }
 
+ /* Fotos de publicaciones guardadas en Bunny (ver js/core/bunny-storage.js): .../users/<id>/posts/post-<fecha>.jpg */
+ function isBunnyPost(url) {
+  return typeof url === 'string' && /\/users\/[^/]+\/posts\/post-\d+\.jpg$/.test(url.split('?')[0]);
+ }
+
  function isPostPhoto(url) {
+  if (isBunnyPost(url)) return true;
   return typeof url === 'string' && url.indexOf(STORAGE_PUBLIC + 'og-media/') !== -1 && /\/post-\d+\.jpg$/.test(url.split('?')[0]);
  }
 
  function thumbUrlFor(url, width) {
   if (!isPostPhoto(url)) return url;
-  if (OG_PERF.useTransform) {
+  if (OG_PERF.useTransform && !isBunnyPost(url)) {
    return url.replace(STORAGE_PUBLIC, STORAGE_RENDER) + '?width=' + (width || OG_PERF.thumbWidth) + '&quality=75&resize=cover';
   }
   if (misses.has(url)) return url;
