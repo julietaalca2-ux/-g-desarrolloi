@@ -1,6 +1,6 @@
 /* ÖG — Service Worker (og-mobile-dev) */
 
-const VERSION = '1.6.9';
+const VERSION = '1.7.1';
 const CACHE_PREFIX = 'og-mobile-dev-';
 const CACHE_NAME = CACHE_PREFIX + VERSION;
 
@@ -45,6 +45,7 @@ const APP_SHELL = [
   'js/config.js',
   'js/state.js',
   'js/utils.js',
+  'js/core/bunny-storage.js',
   'js/core/performance.js',
   'js/app.js',
   'js/core/pwa.js',

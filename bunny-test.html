@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ÖG · Probar Bunny</title>
+<style>
+ body{font-family:-apple-system,system-ui,sans-serif;margin:0;padding:16px;background:#111;color:#f2f2f2;line-height:1.45}
+ h1{font-size:20px;margin:0 0 12px}
+ .box{background:#1c1c1e;border-radius:14px;padding:14px;margin:0 0 14px}
+ .ok{color:#4cd964}.bad{color:#ff6b6b}.mid{color:#ffd166}
+ label.btn{display:block;text-align:center;background:#fff;color:#111;font-weight:700;border-radius:999px;padding:14px;margin-top:8px}
+ input[type=file]{display:none}
+ img,video{max-width:100%;border-radius:10px;margin-top:10px;background:#000}
+ pre{white-space:pre-wrap;word-break:break-all;font-size:12px;background:#000;padding:10px;border-radius:8px}
+</style>
+</head>
+<body>
+<h1>Probar Bunny en ÖG</h1>
+
+<div class="box" id="sessionBox">Revisando sesión…</div>
+
+<div class="box">
+ <b>Paso 1 · Foto</b>
+ <div>Elegí una foto. Se sube como una publicación de prueba.</div>
+ <label class="btn">Elegir foto<input type="file" id="imgFile" accept="image/*"></label>
+ <div id="imgOut"></div>
+</div>
+
+<div class="box">
+ <b>Paso 2 · Video corto</b>
+ <div>Elegí un video corto (hasta 80 MB). Se sube como un Loor de prueba.</div>
+ <label class="btn">Elegir video<input type="file" id="vidFile" accept="video/*"></label>
+ <div id="vidOut"></div>
+</div>
+
+<div class="box"><b>Resultado técnico</b><pre id="log">—</pre></div>
+<p><a href="./" style="color:#9ecbff">Volver a ÖG</a></p>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/core/bunny-storage.js"></script>
+<script>
+ const $ = (id) => document.getElementById(id);
+ const log = (o) => { $('log').textContent = typeof o === 'string' ? o : JSON.stringify(o, null, 2); };
+
+ db.auth.getSession().then(({ data }) => {
+  const s = data && data.session;
+  $('sessionBox').innerHTML = s
+   ? '<span class="ok">✔ Sesión iniciada</span> (' + (s.user.email || s.user.id) + ')'
+   : '<span class="bad">✖ No hay sesión.</span> Abrí ÖG, iniciá sesión y volvé a esta página.';
+ });
+
+ async function run(kind, file, out, tag) {
+  out.innerHTML = '<span class="mid">Subiendo…</span>';
+  try {
+   const res = await window.OG_BUNNY.upload(kind, file, { filename: 'bunnytest-' + Date.now(), contentType: file.type });
+   const onBunny = /\.b-cdn\.net\//.test(res.url);
+   out.innerHTML = '<div class="ok">✔ Subido a Bunny</div><div>Dirección: <br><small>' + res.url + '</small></div><div id="' + tag + 'check" class="mid">Comprobando que se vea…</div>';
+   const el = document.createElement(tag);
+   if (tag === 'video') { el.controls = true; el.playsInline = true; el.preload = 'metadata'; }
+   el.onload = el.onloadedmetadata = () => { $(tag + 'check').className = 'ok'; $(tag + 'check').textContent = '✔ Se carga bien desde el CDN'; };
+   el.onerror = () => { $(tag + 'check').className = 'bad'; $(tag + 'check').textContent = '✖ La dirección existe pero el navegador no la pudo cargar (revisá la Pull Zone).'; };
+   el.src = res.url;
+   out.appendChild(el);
+   log({ resultado: res, enBunny: onBunny });
+  } catch (e) {
+   out.innerHTML = '<div class="bad">✖ ' + (e.message || e) + '</div>';
+   log({ error: e.message, codigo: e.code, http: e.status });
+  }
+ }
+ $('imgFile').onchange = (e) => { const f = e.target.files[0]; if (f) run('post', f, $('imgOut'), 'img'); e.target.value = ''; };
+ $('vidFile').onchange = (e) => { const f = e.target.files[0]; if (f) run('loor', f, $('vidOut'), 'video'); e.target.value = ''; };
+</script>
+</body>
+</html>
